@@ -1,0 +1,39 @@
+{
+  "name": "@markup-carve/eleventy",
+  "version": "0.1.0",
+  "description": "Eleventy (11ty) plugin that adds the Carve markup language as a first-class template format (.crv / .carve), rendered to HTML via carve-js.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Mark Scherer",
+  "keywords": [
+    "eleventy",
+    "eleventy-plugin",
+    "11ty",
+    "carve",
+    "markup",
+    "djot"
+  ],
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@11ty/eleventy": ">=3.0.0"
+  },
+  "dependencies": {
+    "@markup-carve/carve": "file:vendor/carve-0.1.0.tgz",
+    "@iarna/toml": "^2.2.5",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.8"
+  }
+}

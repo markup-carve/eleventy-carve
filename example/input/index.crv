@@ -1,0 +1,14 @@
+---
+title: Carve Home
+layout: base.njk
+---
+
+# Welcome to Carve on Eleventy
+
+This page is written in *Carve* and rendered by the eleventy-carve plugin.
+
+- first item
+- second item
+- third item
+
+See [the Carve project](https://markup-carve.github.io/carve/) for details.

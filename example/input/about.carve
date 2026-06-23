@@ -1,0 +1,9 @@
+---toml
+title = "About"
+layout = "base.njk"
+permalink = "/about-us/index.html"
+---
+
+# About This Site
+
+A page with a custom *permalink* set via TOML frontmatter.
