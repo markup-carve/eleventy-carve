@@ -1,5 +1,5 @@
 {
-  "name": "@markup-carve/eleventy-carve",
+  "name": "@markup-carve/carve-components",
   "version": "0.1.0",
   "description": "Eleventy (11ty) plugin that adds the Carve markup language as a first-class template format (.crv), rendered to HTML via carve-js.",
   "type": "module",
