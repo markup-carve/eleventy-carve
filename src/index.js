@@ -2,7 +2,7 @@
  * eleventy-carve — an Eleventy (11ty) plugin that registers the Carve markup
  * language as a first-class template format.
  *
- * Carve files (`.crv` / `.carve`) become renderable Eleventy templates:
+ * Carve files (`.crv`) become renderable Eleventy templates:
  *   - the body is converted to HTML by carve-js (`carveToHtml`),
  *   - leading Carve frontmatter (`---` / `---toml` / `---json`) is deserialized
  *     and folded into Eleventy's data cascade (so `title`, `layout`,
@@ -58,12 +58,12 @@ export function extractFrontmatter(source) {
  *
  * @param {import("@11ty/eleventy").UserConfig} eleventyConfig
  * @param {object} [options]
- * @param {string[]} [options.templateFormats] - defaults to ["crv","carve"]
+ * @param {string[]} [options.templateFormats] - defaults to ["crv"]
  * @param {Array} [options.extensions] - carve-js extension list
  * @param {object} [options.carveOptions] - extra carve-js options
  */
 export default function carvePlugin(eleventyConfig, options = {}) {
-  const formats = options.templateFormats ?? ['crv', 'carve']
+  const formats = options.templateFormats ?? ['crv']
   const renderCarve = createCarveRenderer(options)
 
   // Eleventy still runs gray-matter over the raw file before our extension's

@@ -1,7 +1,7 @@
 {
   "name": "@markup-carve/eleventy",
   "version": "0.1.0",
-  "description": "Eleventy (11ty) plugin that adds the Carve markup language as a first-class template format (.crv / .carve), rendered to HTML via carve-js.",
+  "description": "Eleventy (11ty) plugin that adds the Carve markup language as a first-class template format (.crv), rendered to HTML via carve-js.",
   "type": "module",
   "license": "MIT",
   "author": "Mark Scherer",

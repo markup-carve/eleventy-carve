@@ -2,7 +2,7 @@
 
 An [Eleventy](https://www.11ty.dev/) (11ty) plugin that adds the
 [Carve](https://markup-carve.github.io/carve/) markup language as a first-class
-template format. Carve files (`.crv` / `.carve`) become renderable Eleventy
+template format. Carve files (`.crv`) become renderable Eleventy
 templates, with their bodies converted to HTML by
 [carve-js](https://github.com/markup-carve/carve-js) and their frontmatter
 folded into Eleventy's data cascade.
@@ -20,8 +20,9 @@ Package name: `@markup-carve/eleventy`.
 npm install @markup-carve/eleventy
 ```
 
-`@markup-carve/carve` (the rendering engine) is a regular dependency and is
-installed automatically.
+`@markup-carve/carve` (the rendering engine) is currently vendored with this
+plugin as a packed tarball (pre-release; it is not published to npm yet) and
+is installed automatically from there.
 
 ## Usage
 
@@ -35,12 +36,12 @@ export default function (eleventyConfig) {
 
   return {
     dir: { input: 'input', output: '_site', includes: '_includes' },
-    templateFormats: ['crv', 'carve'],
+    templateFormats: ['crv'],
   }
 }
 ```
 
-Now any `.crv` or `.carve` file under your input directory is built like a
+Now any `.crv` file under your input directory is built like a
 Markdown template would be.
 
 ### Example Carve page
@@ -67,7 +68,7 @@ See [the project](https://markup-carve.github.io/carve/).
 
 | Option            | Type       | Default            | Description                                                                 |
 | ----------------- | ---------- | ------------------ | --------------------------------------------------------------------------- |
-| `templateFormats` | `string[]` | `["crv","carve"]`  | File extensions to register as Carve templates.                             |
+| `templateFormats` | `string[]` | `["crv"]`          | File extensions to register as Carve templates.                             |
 | `extensions`      | `array`    | `[]`               | carve-js `CarveExtension` list (e.g. citations, mermaid, details).          |
 | `carveOptions`    | `object`   | `{}`               | Extra carve-js options (`ParseOptions` + `RenderOptions`), e.g. `{ lowercaseHeadingIds: true }`. |
 
