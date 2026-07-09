@@ -8,6 +8,6 @@
   },
   "dependencies": {
     "@11ty/eleventy": "^3.0.0",
-    "@markup-carve/eleventy": "file:.."
+    "@markup-carve/eleventy-carve": "file:.."
   }
 }
