@@ -1,4 +1,4 @@
-import carvePlugin from '@markup-carve/carve-components'
+import carvePlugin from '@markup-carve/eleventy-carve'
 
 export default function (eleventyConfig) {
   eleventyConfig.addPlugin(carvePlugin)

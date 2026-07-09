@@ -17,7 +17,7 @@ Package name: `@markup-carve/eleventy`.
 ## Install
 
 ```bash
-npm install @markup-carve/carve-components
+npm install @markup-carve/eleventy-carve
 ```
 
 `@markup-carve/carve` (the rendering engine) is currently vendored with this
@@ -29,7 +29,7 @@ is installed automatically from there.
 `eleventy.config.js` (ESM):
 
 ```js
-import carvePlugin from '@markup-carve/carve-components'
+import carvePlugin from '@markup-carve/eleventy-carve'
 
 export default function (eleventyConfig) {
   eleventyConfig.addPlugin(carvePlugin)
@@ -75,7 +75,7 @@ See [the project](https://markup-carve.github.io/carve/).
 Example with options:
 
 ```js
-import carvePlugin from '@markup-carve/carve-components'
+import carvePlugin from '@markup-carve/eleventy-carve'
 import { mermaid } from '@markup-carve/carve'
 
 export default function (eleventyConfig) {
@@ -139,7 +139,7 @@ The module also exports helpers (useful for testing or custom pipelines):
 import carvePlugin, {
   createCarveRenderer, // (options?) => (source) => html
   extractFrontmatter,  // (source) => dataObject
-} from '@markup-carve/carve-components'
+} from '@markup-carve/eleventy-carve'
 ```
 
 ## What is verified
