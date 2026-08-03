@@ -20,9 +20,8 @@ Package name: `@markup-carve/eleventy`.
 npm install @markup-carve/eleventy-carve
 ```
 
-`@markup-carve/carve` (the rendering engine) is currently vendored with this
-plugin as a packed tarball (pre-release; it is not published to npm yet) and
-is installed automatically from there.
+`@markup-carve/carve` (the rendering engine) comes from npm as an ordinary
+dependency, so `npm install` above is all that is needed.
 
 ## Usage
 
