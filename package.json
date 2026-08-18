@@ -29,7 +29,7 @@
     "@11ty/eleventy": ">=3.0.0"
   },
   "dependencies": {
-    "@markup-carve/carve": "^0.1.2",
+    "@markup-carve/carve": "^0.1.4",
     "@iarna/toml": "^2.2.5",
     "js-yaml": "^4.1.0"
   },

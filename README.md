@@ -7,7 +7,7 @@ templates, with their bodies converted to HTML by
 [carve-js](https://github.com/markup-carve/carve-js) and their frontmatter
 folded into Eleventy's data cascade.
 
-Package name: `@markup-carve/eleventy`.
+Package name: `@markup-carve/eleventy-carve`.
 
 ## Requirements
 
