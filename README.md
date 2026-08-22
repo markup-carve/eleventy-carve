@@ -153,7 +153,3 @@ This plugin ships with tests that run for real:
   TOML `permalink` was honored.
 
 Run them with `npm test`.
-
-## License
-
-MIT
