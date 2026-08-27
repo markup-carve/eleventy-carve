@@ -5,6 +5,10 @@
   "type": "module",
   "license": "MIT",
   "author": "Mark Scherer",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/markup-carve/eleventy-carve"
+  },
   "keywords": [
     "eleventy",
     "eleventy-plugin",
