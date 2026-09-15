@@ -70,6 +70,8 @@ See [the project](https://markup-carve.github.io/carve/).
 | `templateFormats` | `string[]` | `["crv"]`          | File extensions to register as Carve templates.                             |
 | `extensions`      | `array`    | `[]`               | carve-js `CarveExtension` list (e.g. citations, mermaid, details).          |
 | `carveOptions`    | `object`   | `{}`               | Extra carve-js options (`ParseOptions` + `RenderOptions`), e.g. `{ lowercaseHeadingIds: true }`. |
+| `includes`        | `boolean`  | `true`              | Expand `{{ path }}` directives for file-backed templates.                     |
+| `includeRoot`     | `string`   | document directory | Absolute containment root for included files.                                |
 
 Example with options:
 
@@ -84,6 +86,9 @@ export default function (eleventyConfig) {
   })
 }
 ```
+
+Include paths resolve relative to the template. Resolved files are added to
+Eleventy's watch targets. Set `includes: false` to leave directives literal.
 
 ## Frontmatter
 

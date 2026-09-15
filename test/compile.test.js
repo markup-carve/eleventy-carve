@@ -1,4 +1,7 @@
 import { describe, it, expect } from 'vitest'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { createCarveRenderer, extractFrontmatter } from '../src/index.js'
 
 describe('createCarveRenderer', () => {
@@ -38,6 +41,19 @@ describe('createCarveRenderer', () => {
     const html = lower('# Hello World')
     // lowercased id slug
     expect(html).toContain('id="hello-world"')
+  })
+
+  it('expands a contained include for a file-backed render', () => {
+    const root = mkdtempSync(join(tmpdir(), 'eleventy-carve-includes-'))
+    try {
+      const page = join(root, 'pages', 'index.crv')
+      mkdirSync(join(root, 'pages'))
+      writeFileSync(join(root, 'shared.crv'), 'Included text.')
+      const render = createCarveRenderer({ includeRoot: root }, page)
+      expect(render('{{ ../shared.crv }}')).toContain('Included text.')
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
   })
 })
 
