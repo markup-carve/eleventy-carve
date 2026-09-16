@@ -19,7 +19,9 @@
  *   }
  */
 
-import { carveToHtml, parse } from '@markup-carve/carve'
+import { carveToHtml, expandIncludes, parse, renderDocument, resolve } from '@markup-carve/carve'
+import { fileSystemResolver } from '@markup-carve/carve/node'
+import path from 'node:path'
 import { parseFrontmatter } from './frontmatter.js'
 import yaml from 'js-yaml'
 import toml from '@iarna/toml'
@@ -33,9 +35,24 @@ import toml from '@iarna/toml'
  * @param {object} [options.carveOptions] - extra carve-js ParseOptions/RenderOptions
  * @returns {(source: string) => string}
  */
-export function createCarveRenderer(options = {}) {
+export function createCarveRenderer(options = {}, sourcePath) {
   const { extensions = [], carveOptions = {} } = options
   return function renderCarve(source) {
+    if (sourcePath && (options.includes ?? true)) {
+      // A configured root reaches the resolver unchanged, so its absolute-path
+      // refusal (PART 9 section 19, I10) still fires. Resolving it here would
+      // root containment at the process working directory instead. Eleventy's
+      // own inputPath is relative to that directory, so the default still resolves.
+      const root = options.includeRoot ?? path.dirname(path.resolve(sourcePath))
+      const expanded = expandIncludes(parse(source, { ...carveOptions, extensions }), source, {
+        resolve: fileSystemResolver(root),
+        sourcePath: path.resolve(sourcePath),
+        extensions,
+      })
+      for (const dependency of expanded.dependencies) options.onDependency?.(dependency)
+      for (const warning of expanded.warnings) options.onWarning?.(warning)
+      return renderDocument(resolve(expanded.doc), carveOptions)
+    }
     return carveToHtml(source, { ...carveOptions, extensions })
   }
 }
@@ -64,7 +81,6 @@ export function extractFrontmatter(source) {
  */
 export default function carvePlugin(eleventyConfig, options = {}) {
   const formats = options.templateFormats ?? ['crv']
-  const renderCarve = createCarveRenderer(options)
 
   // Eleventy still runs gray-matter over the raw file before our extension's
   // compile step ever sees it. Carve's frontmatter syntax allows explicit
@@ -98,7 +114,18 @@ export default function carvePlugin(eleventyConfig, options = {}) {
       return extractFrontmatter(source)
     },
 
-    compile: function (inputContent /*, inputPath */) {
+    compile: function (inputContent, inputPath) {
+      const renderCarve = createCarveRenderer({
+        ...options,
+        onDependency(dependency) {
+          if (dependency.resolved) eleventyConfig.addWatchTarget(dependency.id)
+          options.onDependency?.(dependency)
+        },
+        onWarning(warning) {
+          if (options.onWarning) options.onWarning(warning)
+          else console.warn(`eleventy-carve: ${warning.message}`)
+        },
+      }, inputPath)
       // Returning a function makes this a permalink-aware template: Eleventy
       // calls it once per output with the merged data, but Carve rendering does
       // not depend on data, so we ignore the argument and render the source.
