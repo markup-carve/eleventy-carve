@@ -39,7 +39,11 @@ export function createCarveRenderer(options = {}, sourcePath) {
   const { extensions = [], carveOptions = {} } = options
   return function renderCarve(source) {
     if (sourcePath && (options.includes ?? true)) {
-      const root = path.resolve(options.includeRoot ?? path.dirname(sourcePath))
+      // A configured root reaches the resolver unchanged, so its absolute-path
+      // refusal (PART 9 section 19, I10) still fires. Resolving it here would
+      // root containment at the process working directory instead. Eleventy's
+      // own inputPath is relative to that directory, so the default still resolves.
+      const root = options.includeRoot ?? path.dirname(path.resolve(sourcePath))
       const expanded = expandIncludes(parse(source, { ...carveOptions, extensions }), source, {
         resolve: fileSystemResolver(root),
         sourcePath: path.resolve(sourcePath),

@@ -55,6 +55,11 @@ describe('createCarveRenderer', () => {
       rmSync(root, { recursive: true, force: true })
     }
   })
+
+  it('refuses a relative include root instead of rooting it at the cwd', () => {
+    const render = createCarveRenderer({ includeRoot: '..' }, join('pages', 'index.crv'))
+    expect(() => render('{{ shared.crv }}')).toThrow(/absolute path/)
+  })
 })
 
 describe('extractFrontmatter', () => {
