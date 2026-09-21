@@ -6,13 +6,19 @@ Rendering is done by the Carve engine (`@markup-carve/carve`), so an engine
 change can alter output with no plugin diff. Engine bumps therefore get an
 entry of their own.
 
-## Unreleased
+## 0.1.1 - 2026-09-21
 
-### Fixed
+### Added
 
-- `exports` now names `./package.json`, so `require('@markup-carve/eleventy-carve/package.json')`
-  reads the installed version back instead of throwing `ERR_PACKAGE_PATH_NOT_EXPORTED`
-  (markup-carve/carve#1484).
+- `{{ path }}` include directives in file-backed templates now expand,
+  resolved relative to the template and contained to its directory by default.
+  Included files join Eleventy's watch targets. `includes: false` leaves them
+  literal, and `includeRoot` sets an absolute containment root (#16).
+
+### Changed
+
+- Requires `@markup-carve/carve` 0.1.7 (`^0.1.7`), the first release carrying
+  contained include expansion (#18).
 
 ## 0.1.0 - 2026-08-18
 
@@ -24,6 +30,9 @@ First release.
   files become renderable Eleventy templates: bodies are converted to HTML by
   carve-js, frontmatter folds into Eleventy's data cascade.
 - Eleventy 3.x (ESM) is accepted as a peer dependency (`>=3.0.0`).
+- `exports` names `./package.json`, so
+  `require('@markup-carve/eleventy-carve/package.json')` reads the installed
+  version back (markup-carve/carve#1484).
 
 ### Security
 
