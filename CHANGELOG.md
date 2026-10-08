@@ -16,7 +16,7 @@ entry of their own.
   drop the report, so a blanked `javascript:` destination, a flattened ruby
   annotation or a raw block for another format left no trace. The plugin's
   default hook logs to the Eleventy console, so a caller that set none sees them
-  too.
+  too (#24).
 
 ### Changed
 
@@ -25,7 +25,7 @@ entry of their own.
   run the engine a consumer installs. Three engine behaviors this renderer
   reaches now have tests: a case-only cross-reference stays literal, an include
   renames every colliding id rather than only a heading id, and a denied
-  destination scheme is reported.
+  destination scheme is reported (#24).
 
 ## 0.1.1 - 2026-09-21
 
