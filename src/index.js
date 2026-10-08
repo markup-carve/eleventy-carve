@@ -19,7 +19,7 @@
  *   }
  */
 
-import { carveToHtml, expandIncludes, parse, renderDocument, resolve } from '@markup-carve/carve'
+import { carveToHtmlWithReport, expandIncludes, parse, renderDocumentWithReport, resolve } from '@markup-carve/carve'
 import { fileSystemResolver } from '@markup-carve/carve/node'
 import path from 'node:path'
 import { parseFrontmatter } from './frontmatter.js'
@@ -35,6 +35,30 @@ import toml from '@iarna/toml'
  * @param {object} [options.carveOptions] - extra carve-js ParseOptions/RenderOptions
  * @returns {(source: string) => string}
  */
+/**
+ * A render loss is the engine saying it dropped something the author wrote: a
+ * blanked `javascript:` destination, a flattened ruby annotation, a raw block
+ * for another format. It goes out through the same hook the include warnings
+ * use, so a caller that already handles those needs no change.
+ *
+ * @param {{ value: string, losses: Array<object>, totalLosses: number, truncated: boolean }} result
+ * @param {object} options
+ * @returns {string}
+ */
+function reportLosses(result, options) {
+  for (const loss of result.losses) {
+    const at = loss.pos ? ` (line ${loss.pos.startLine}, column ${loss.pos.startColumn})` : ''
+    options.onWarning?.({ ...loss, message: `${loss.message} [${loss.code}]${at}` })
+  }
+  if (result.truncated) {
+    options.onWarning?.({
+      code: 'render-losses-truncated',
+      message: `${result.totalLosses} render losses in total; the rest were not reported`,
+    })
+  }
+  return result.value
+}
+
 export function createCarveRenderer(options = {}, sourcePath) {
   const { extensions = [], carveOptions = {} } = options
   return function renderCarve(source) {
@@ -51,9 +75,9 @@ export function createCarveRenderer(options = {}, sourcePath) {
       })
       for (const dependency of expanded.dependencies) options.onDependency?.(dependency)
       for (const warning of expanded.warnings) options.onWarning?.(warning)
-      return renderDocument(resolve(expanded.doc), carveOptions)
+      return reportLosses(renderDocumentWithReport(resolve(expanded.doc), carveOptions), options)
     }
-    return carveToHtml(source, { ...carveOptions, extensions })
+    return reportLosses(carveToHtmlWithReport(source, { ...carveOptions, extensions }), options)
   }
 }
 
