@@ -6,6 +6,27 @@ Rendering is done by the Carve engine (`@markup-carve/carve`), so an engine
 change can alter output with no plugin diff. Engine bumps therefore get an
 entry of their own.
 
+## [Unreleased]
+
+### Added
+
+- A render loss the engine records goes out through `onWarning`, the hook the
+  include warnings already use, carrying its code and source position. Rendering
+  went through `renderDocument` and `carveToHtml`, which return a string and
+  drop the report, so a blanked `javascript:` destination, a flattened ruby
+  annotation or a raw block for another format left no trace. The plugin's
+  default hook logs to the Eleventy console, so a caller that set none sees them
+  too.
+
+### Changed
+
+- Tested against `@markup-carve/carve` 0.1.10. The declared range `^0.1.7`
+  already resolved it, but the committed lockfile held 0.1.7, so CI had never
+  run the engine a consumer installs. Three engine behaviors this renderer
+  reaches now have tests: a case-only cross-reference stays literal, an include
+  renames every colliding id rather than only a heading id, and a denied
+  destination scheme is reported.
+
 ## 0.1.1 - 2026-09-21
 
 ### Added
