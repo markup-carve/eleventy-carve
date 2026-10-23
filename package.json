@@ -34,8 +34,8 @@
     "@11ty/eleventy": ">=3.0.0"
   },
   "dependencies": {
-    "@markup-carve/carve": "^0.1.7",
     "@iarna/toml": "^2.2.5",
+    "@markup-carve/carve": "^0.1.13",
     "js-yaml": "^4.1.0"
   },
   "devDependencies": {

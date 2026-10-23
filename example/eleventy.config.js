@@ -1,7 +1,7 @@
 import carvePlugin from '@markup-carve/eleventy-carve'
 
 export default function (eleventyConfig) {
-  eleventyConfig.addPlugin(carvePlugin)
+  eleventyConfig.addPlugin(carvePlugin, { wikilinks: true })
 
   return {
     dir: {
