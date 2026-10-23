@@ -6,14 +6,20 @@ Rendering is done by the Carve engine (`@markup-carve/carve`), so an engine
 change can alter output with no plugin diff. Engine bumps therefore get an
 entry of their own.
 
-## Unreleased
+## [0.1.3] - 2026-10-23
 
-- Require `@markup-carve/carve` 0.1.13, which adds `@region:name` includes.
+### Added
+
 - Add an opt-in `lint` option that reports carve-js lint findings, including
-  those in included files, through `onWarning`.
+  those in included files, through `onWarning` (#31).
 - Add a `wikilinks` option that resolves `[[Page]]` links to the URLs of pages
   in an Eleventy collection, with a custom resolver and warnings for missing or
-  ambiguous targets.
+  ambiguous targets (#31).
+
+### Changed
+
+- Require `@markup-carve/carve` 0.1.13, which adds `@region:name` includes
+  (#31).
 
 ## [0.1.2] - 2026-10-08
 
