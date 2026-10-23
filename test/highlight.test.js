@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { createCarveRenderer } from '../src/index.js'
 import { codeCollector, createCarveHighlighter, highlighterFor } from '../src/highlight.js'
 
@@ -18,6 +21,17 @@ describe('Shiki highlighting', () => {
     const html = await render('``` carve\n*bold* and {~gone~}\n```\n')
     expect(html).toContain('data-language="carve"')
     expect(html).toContain('data-carve-strike')
+  })
+
+  it('highlights a file-backed render, the path every Eleventy template takes', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'eleventy-carve-shiki-'))
+    try {
+      const collector = codeCollector(await createCarveHighlighter())
+      const html = await collector.apply(createCarveRenderer({}, join(root, 'page.crv'))('``` ts\nlet a\n```\n', undefined, [collector.extension]))
+      expect(html).toContain('<pre class="shiki github-dark"')
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
   })
 
   it('highlights a CSV fence body inside a Carve fence', async () => {
