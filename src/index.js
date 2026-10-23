@@ -26,6 +26,7 @@ import { parseFrontmatter } from './frontmatter.js'
 import yaml from 'js-yaml'
 import toml from '@iarna/toml'
 import { wikilinksExtension } from './wikilinks.js'
+import { codeCollector, highlighterFor } from './highlight.js'
 
 /**
  * Build the function Eleventy calls to turn one Carve source string into HTML.
@@ -82,11 +83,11 @@ function reportLint(source, options, extensions, includeOptions) {
 
 export function createCarveRenderer(options = {}, sourcePath) {
   const { carveOptions = {} } = options
-  return function renderCarve(source, data) {
+  return function renderCarve(source, data, extraExtensions = []) {
     const wiki = options.wikilinks
       ? [wikilinksExtension(options.wikilinks === true ? {} : options.wikilinks, data, (warning) => options.onWarning?.(warning))]
       : []
-    const extensions = [...(options.extensions ?? []), ...wiki]
+    const extensions = [...(options.extensions ?? []), ...wiki, ...extraExtensions]
     const includeOptions = sourcePath && (options.includes ?? true)
       ? {
           // A configured root reaches the resolver unchanged, so its absolute-path
@@ -182,7 +183,10 @@ export default function carvePlugin(eleventyConfig, options = {}) {
       // Eleventy calls this once per output with the merged data; wiki links
       // read `data.collections` from it.
       return async function (data) {
-        return renderCarve(inputContent, data)
+        const highlighter = await highlighterFor(options.highlight)
+        if (!highlighter) return renderCarve(inputContent, data)
+        const collector = codeCollector(highlighter)
+        return collector.apply(renderCarve(inputContent, data, [collector.extension]))
       }
     },
   })

@@ -15,6 +15,9 @@ entry of their own.
 - Add a `wikilinks` option that resolves `[[Page]]` links to the URLs of pages
   in an Eleventy collection, with a custom resolver and warnings for missing or
   ambiguous targets (#31).
+- Add a `highlight` option that highlights fenced code with Shiki and the Carve
+  grammar from `@markup-carve/carve-grammars`, both optional peer dependencies
+  (#32).
 
 ### Fixed
 
