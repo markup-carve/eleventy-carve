@@ -102,7 +102,8 @@ export function createCarveRenderer(options = {}, sourcePath) {
       for (const dependency of expanded.dependencies) options.onDependency?.(dependency)
       for (const warning of expanded.warnings) options.onWarning?.(warning)
       reportLint(source, options, extensions, includeOptions)
-      return reportLosses(renderDocumentWithReport(resolve(expanded.doc), carveOptions), options)
+      const { asciiHeadingIds, lowercaseHeadingIds } = carveOptions
+      return reportLosses(renderDocumentWithReport(resolve(expanded.doc, { asciiHeadingIds, lowercaseHeadingIds }), { ...carveOptions, extensions }), options)
     }
     reportLint(source, options, extensions, undefined)
     return reportLosses(carveToHtmlWithReport(source, { ...carveOptions, extensions }), options)
