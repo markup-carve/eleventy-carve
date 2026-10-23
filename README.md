@@ -74,6 +74,7 @@ See [the project](https://markup-carve.github.io/carve/).
 | `includeRoot`     | `string`   | document directory | Absolute containment root for included files.                                |
 | `lint`            | `boolean \| { platforms }` | `false` | Report carve-js lint findings through `onWarning`. See [Lint](#lint).         |
 | `wikilinks`       | `boolean \| object` | `false`   | Parse `[[Page]]` links and resolve them against a collection. See [Wiki links](#wiki-links). |
+| `highlight`       | `boolean \| object` | `false`   | Highlight fenced code with Shiki and the Carve grammar. See [Syntax highlighting](#syntax-highlighting). |
 | `onWarning`       | `function` | logs to console    | Receives include warnings, render losses, lint findings and wiki-link warnings. |
 
 Example with options:
@@ -131,6 +132,36 @@ goes to the page's `url`, so permalinks are honored. Pages with
 `permalink: false` are skipped. A name that matches nothing or several pages
 reaches `onWarning` (`wikilink-unresolved`, `wikilink-ambiguous`) and links to
 the plain slug. `wikilinks: true` uses the defaults.
+
+## Syntax highlighting
+
+`highlight: true` highlights fenced code with Shiki. Install the two optional
+peer dependencies first:
+
+```bash
+npm install shiki @markup-carve/carve-grammars
+```
+
+Pass an object to configure Shiki: `theme` (default `github-dark`) or `themes`
+with `defaultColor`, extra `langs`, `langAlias` and `transformers`.
+
+```js
+eleventyConfig.addPlugin(carvePlugin, {
+  highlight: { themes: { light: 'github-light', dark: 'github-dark' } },
+})
+```
+
+`carve` and `crv` fences use the Carve grammar from
+`@markup-carve/carve-grammars`, with its theme colors for Carve-specific scopes
+and the marks for strikethrough, sub/superscript and highlight. Load its
+stylesheet, `@markup-carve/carve-grammars/shiki/carve.css`, in your layout.
+A fence's `{#id .class key=value}` attributes and quoted title land on the
+highlighted `<pre>`, which also carries `data-language`. A fence without a
+language, or in a language Shiki does not bundle, keeps the plain
+`<pre><code class="language-x">` output.
+
+This is separate from `@11ty/eleventy-plugin-syntaxhighlight`, which highlights
+Markdown and Nunjucks code with Prism and does not see Carve templates.
 
 ## Frontmatter
 
