@@ -20,7 +20,7 @@ entry of their own.
 
 - A template rendered from a file, the normal Eleventy path, now applies the
   `extensions` render hooks (such as `mermaid()`) and the heading-id options in
-  `carveOptions`. Only renders without a file path used them before.
+  `carveOptions`. Only renders without a file path used them before (#34).
 
 ### Changed
 
