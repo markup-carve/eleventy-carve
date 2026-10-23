@@ -20,6 +20,11 @@ describe('Shiki highlighting', () => {
     expect(html).toContain('data-carve-strike')
   })
 
+  it('highlights a CSV fence body inside a Carve fence', async () => {
+    const html = await render('```` carve\n``` csv\na,b\n```\n````\n')
+    expect(html).toContain('<span style="color:#79B8FF;font-weight:bold">a</span><span style="color:#F97583">,</span>')
+  })
+
   it('keeps the plain engine output for a fence without a language or with an unknown one', async () => {
     const html = await render('```\nplain\n```\n\n``` nosuchlang\nx < y\n```\n')
     expect(html).toContain('<pre><code>plain\n</code></pre>')

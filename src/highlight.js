@@ -28,7 +28,8 @@ export async function createCarveHighlighter(options = {}) {
   const theme = themes ? undefined : await resolveTheme(options.theme ?? DEFAULT_THEME)
   const highlighter = await shiki.createHighlighter({
     themes: themes ? Object.values(themes) : [theme],
-    langs: [grammars.carveGrammar, ...(options.langs ?? [])],
+    // The Carve grammar highlights CSV and TSV fence bodies with these.
+    langs: [grammars.carveGrammar, grammars.carveCsvGrammar, grammars.carveTsvGrammar, ...(options.langs ?? [])],
     langAlias: options.langAlias,
   })
   const carveNames = new Set([grammars.carveGrammar.name, ...(grammars.carveGrammar.aliases ?? [])])
