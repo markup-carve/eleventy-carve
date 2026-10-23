@@ -49,5 +49,6 @@ describe('Shiki highlighting', () => {
     expect(highlighterFor(undefined)).toBeUndefined()
     const options = { theme: 'nord' }
     expect(highlighterFor(options)).toBe(highlighterFor(options))
+    expect(highlighterFor(true)).toBe(highlighterFor(true))
   })
 })

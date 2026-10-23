@@ -69,11 +69,13 @@ export async function createCarveHighlighter(options = {}) {
 }
 
 const cache = new WeakMap()
+// Shared so every `highlight: true` render hits the cache.
+const DEFAULTS = {}
 
 /** One highlighter per options object, or none when highlighting is off. */
 export function highlighterFor(option) {
   if (!option) return undefined
-  const config = option === true ? {} : option
+  const config = option === true ? DEFAULTS : option
   let highlighter = cache.get(config)
   if (!highlighter) cache.set(config, highlighter = createCarveHighlighter(config))
   return highlighter
