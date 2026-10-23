@@ -16,6 +16,12 @@ entry of their own.
   in an Eleventy collection, with a custom resolver and warnings for missing or
   ambiguous targets (#31).
 
+### Fixed
+
+- A template rendered from a file, the normal Eleventy path, now applies the
+  `extensions` render hooks (such as `mermaid()`) and the heading-id options in
+  `carveOptions`. Only renders without a file path used them before.
+
 ### Changed
 
 - Require `@markup-carve/carve` 0.1.13, which adds `@region:name` includes

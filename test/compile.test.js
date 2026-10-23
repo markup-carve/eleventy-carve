@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { mermaid } from '@markup-carve/carve'
 import { createCarveRenderer, extractFrontmatter } from '../src/index.js'
 
 describe('createCarveRenderer', () => {
@@ -41,6 +42,18 @@ describe('createCarveRenderer', () => {
     const html = lower('# Hello World')
     // lowercased id slug
     expect(html).toContain('id="hello-world"')
+  })
+
+  it('applies extensions and heading-id options to a file-backed render', () => {
+    const root = mkdtempSync(join(tmpdir(), 'eleventy-carve-options-'))
+    try {
+      const render = createCarveRenderer({ extensions: [mermaid()], carveOptions: { lowercaseHeadingIds: true } }, join(root, 'page.crv'))
+      const html = render('# Hello World\n\n``` mermaid\ngraph TD; A-->B\n```\n')
+      expect(html).toContain('id="hello-world"')
+      expect(html).toContain('<pre class="mermaid"')
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
   })
 
   it('expands a contained include for a file-backed render', () => {
