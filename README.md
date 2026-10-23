@@ -72,6 +72,9 @@ See [the project](https://markup-carve.github.io/carve/).
 | `carveOptions`    | `object`   | `{}`               | Extra carve-js options (`ParseOptions` + `RenderOptions`), e.g. `{ lowercaseHeadingIds: true }`. |
 | `includes`        | `boolean`  | `true`              | Expand `{{ path }}` directives for file-backed templates.                     |
 | `includeRoot`     | `string`   | document directory | Absolute containment root for included files.                                |
+| `lint`            | `boolean \| { platforms }` | `false` | Report carve-js lint findings through `onWarning`. See [Lint](#lint).         |
+| `wikilinks`       | `boolean \| object` | `false`   | Parse `[[Page]]` links and resolve them against a collection. See [Wiki links](#wiki-links). |
+| `onWarning`       | `function` | logs to console    | Receives include warnings, render losses, lint findings and wiki-link warnings. |
 
 Example with options:
 
@@ -89,6 +92,45 @@ export default function (eleventyConfig) {
 
 Include paths resolve relative to the template. Resolved files are added to
 Eleventy's watch targets. Set `includes: false` to leave directives literal.
+`{{ shared.crv @region:intro }}` splices only the lines between
+`%% #region intro` and `%% #endregion`; a missing region is reported through
+`onWarning` with the rule `include-region-invalid`.
+
+## Lint
+
+`lint: true` runs the carve-js linter on every Carve template, following its
+includes. Each finding reaches `onWarning` with `code` set to the rule id, the
+`line`, `column` and, for an included file, `file`, and a message such as
+`Link to "#nowhere" matches no id in this document, so the link goes nowhere. [broken-fragment-link] (line 5, column 7)`.
+Without an `onWarning` hook the plugin logs it to the console. Lint never fails
+the build. `lint: { platforms: ['github'] }` adds the rules for text GitHub
+re-links, such as a bare `#12`.
+
+## Wiki links
+
+`wikilinks` enables the carve-js `[[Page]]` syntax (`[[Page|label]]`,
+`[[Page#anchor]]`, `[[folder/page]]`) and links each target to the URL of a page
+in an Eleventy collection:
+
+```js
+eleventyConfig.addPlugin(carvePlugin, {
+  wikilinks: {
+    collection: 'all', // default
+    // Optional, tried first. Return undefined to fall through to the collection.
+    resolve: (page, data) => (page === 'Changelog' ? '/changelog/' : undefined),
+    cssClass: 'wikilink',
+    newWindow: false,
+  },
+})
+```
+
+A name is compared as a slug against, in order, the page's path stem without
+the input directory prefix (`[[docs/getting-started]]`), its file slug
+(`[[Getting Started]]` finds `getting-started.crv`), and its `title`. The link
+goes to the page's `url`, so permalinks are honored. Pages with
+`permalink: false` are skipped. A name that matches nothing or several pages
+reaches `onWarning` (`wikilink-unresolved`, `wikilink-ambiguous`) and links to
+the plain slug. `wikilinks: true` uses the defaults.
 
 ## Frontmatter
 
@@ -141,7 +183,7 @@ The module also exports helpers (useful for testing or custom pipelines):
 
 ```js
 import carvePlugin, {
-  createCarveRenderer, // (options?) => (source) => html
+  createCarveRenderer, // (options?, sourcePath?) => (source, data?) => html
   extractFrontmatter,  // (source) => dataObject
 } from '@markup-carve/eleventy-carve'
 ```

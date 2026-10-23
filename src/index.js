@@ -19,12 +19,13 @@
  *   }
  */
 
-import { carveToHtmlWithReport, expandIncludes, parse, renderDocumentWithReport, resolve } from '@markup-carve/carve'
+import { carveToHtmlWithReport, expandIncludes, lintCarve, parse, renderDocumentWithReport, resolve } from '@markup-carve/carve'
 import { fileSystemResolver } from '@markup-carve/carve/node'
 import path from 'node:path'
 import { parseFrontmatter } from './frontmatter.js'
 import yaml from 'js-yaml'
 import toml from '@iarna/toml'
+import { wikilinksExtension } from './wikilinks.js'
 
 /**
  * Build the function Eleventy calls to turn one Carve source string into HTML.
@@ -59,24 +60,51 @@ function reportLosses(result, options) {
   return result.value
 }
 
+/**
+ * Lint findings go out through `onWarning` like include warnings, with the
+ * rule id as `code` and the position in the message.
+ */
+function reportLint(source, options, extensions, includeOptions) {
+  if (!options.lint) return
+  const { carveOptions = {} } = options
+  const findings = lintCarve(source, {
+    includes: includeOptions,
+    asciiHeadingIds: carveOptions.asciiHeadingIds,
+    lowercaseHeadingIds: carveOptions.lowercaseHeadingIds,
+    extensions,
+    platforms: options.lint === true ? undefined : options.lint.platforms,
+  })
+  for (const finding of findings) {
+    const where = `line ${finding.line}, column ${finding.column}${finding.file ? ` of ${finding.file}` : ''}`
+    options.onWarning?.({ ...finding, code: finding.rule, message: `${finding.message} [${finding.rule}] (${where})` })
+  }
+}
+
 export function createCarveRenderer(options = {}, sourcePath) {
-  const { extensions = [], carveOptions = {} } = options
-  return function renderCarve(source) {
-    if (sourcePath && (options.includes ?? true)) {
-      // A configured root reaches the resolver unchanged, so its absolute-path
-      // refusal (PART 9 section 19, I10) still fires. Resolving it here would
-      // root containment at the process working directory instead. Eleventy's
-      // own inputPath is relative to that directory, so the default still resolves.
-      const root = options.includeRoot ?? path.dirname(path.resolve(sourcePath))
-      const expanded = expandIncludes(parse(source, { ...carveOptions, extensions }), source, {
-        resolve: fileSystemResolver(root),
-        sourcePath: path.resolve(sourcePath),
-        extensions,
-      })
+  const { carveOptions = {} } = options
+  return function renderCarve(source, data) {
+    const wiki = options.wikilinks
+      ? [wikilinksExtension(options.wikilinks === true ? {} : options.wikilinks, data, (warning) => options.onWarning?.(warning))]
+      : []
+    const extensions = [...(options.extensions ?? []), ...wiki]
+    const includeOptions = sourcePath && (options.includes ?? true)
+      ? {
+          // A configured root reaches the resolver unchanged, so its absolute-path
+          // refusal (PART 9 section 19, I10) still fires. Resolving it here would
+          // root containment at the process working directory instead. Eleventy's
+          // own inputPath is relative to that directory, so the default still resolves.
+          resolve: fileSystemResolver(options.includeRoot ?? path.dirname(path.resolve(sourcePath))),
+          sourcePath: path.resolve(sourcePath),
+        }
+      : undefined
+    if (includeOptions) {
+      const expanded = expandIncludes(parse(source, { ...carveOptions, extensions }), source, { ...includeOptions, extensions })
       for (const dependency of expanded.dependencies) options.onDependency?.(dependency)
       for (const warning of expanded.warnings) options.onWarning?.(warning)
+      reportLint(source, options, extensions, includeOptions)
       return reportLosses(renderDocumentWithReport(resolve(expanded.doc), carveOptions), options)
     }
+    reportLint(source, options, extensions, undefined)
     return reportLosses(carveToHtmlWithReport(source, { ...carveOptions, extensions }), options)
   }
 }
@@ -150,11 +178,10 @@ export default function carvePlugin(eleventyConfig, options = {}) {
           else console.warn(`eleventy-carve: ${warning.message}`)
         },
       }, inputPath)
-      // Returning a function makes this a permalink-aware template: Eleventy
-      // calls it once per output with the merged data, but Carve rendering does
-      // not depend on data, so we ignore the argument and render the source.
-      return async function (/* data */) {
-        return renderCarve(inputContent)
+      // Eleventy calls this once per output with the merged data; wiki links
+      // read `data.collections` from it.
+      return async function (data) {
+        return renderCarve(inputContent, data)
       }
     },
   })
