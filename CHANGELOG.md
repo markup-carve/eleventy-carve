@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.4] - 2026-10-24
+
+Optional Carve code highlighting in Eleventy follows the latest grammar fixes for definition lists and fenced code.
+
+### Fixes
+
+- Definition list and fence highlighting follows carve-grammars 0.1.19 (#37).
+
+**Full Changelog**: https://github.com/markup-carve/eleventy-carve/compare/0.1.3...0.1.4
+
 Notable changes to `eleventy-carve`.
 
 Rendering is done by the Carve engine (`@markup-carve/carve`), so an engine
