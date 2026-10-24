@@ -2,11 +2,12 @@
 
 ## [0.1.4] - 2026-10-24
 
-Optional Carve code highlighting in Eleventy follows the latest grammar fixes for definition lists and fenced code.
+Optional Carve code highlighting follows the current grammar. Rendering and Markdown loss reports follow the published Carve engine.
 
 ### Fixes
 
-- Definition list and fence highlighting follows carve-grammars 0.1.19 (#37).
+- Definition list and fence highlighting follows carve-grammars 0.1.20 (#37, #39).
+- Table spans, wrapped attributes, and continuation markers follow the Carve 0.1.12 rulings; Markdown export reports container, caption, attribute, and escaped HTML losses (#39).
 
 **Full Changelog**: https://github.com/markup-carve/eleventy-carve/compare/0.1.3...0.1.4
 
