@@ -21,7 +21,7 @@
 
 import { carveToHtmlWithReport, expandIncludes, lintCarve, parse, renderDocumentWithReport, resolve } from '@markup-carve/carve'
 import { fileSystemResolver } from '@markup-carve/carve/node'
-import { readFileSync } from 'node:fs'
+import { readFileSync, realpathSync } from 'node:fs'
 import path from 'node:path'
 import { parseFrontmatter } from './frontmatter.js'
 import yaml from 'js-yaml'
@@ -80,12 +80,24 @@ function reportLint(source, options, extensions, includeOptions) {
     platforms: lint.platforms,
     enabledRules: lint.enabledRules,
     captionLookingParagraph: lint.captionLookingParagraph,
-    // The engine matches file ids exactly, and they are absolute paths here.
-    ignoredFiles: lint.ignoredFiles?.map((file) => path.resolve(file)),
+    ignoredFiles: lint.ignoredFiles?.flatMap(fileIds),
   })
   for (const finding of findings) {
     const where = `line ${finding.line}, column ${finding.column}${finding.file ? ` of ${finding.file}` : ''}`
     options.onWarning?.({ ...finding, code: finding.rule, message: `${finding.message} [${finding.rule}] (${where})` })
+  }
+}
+
+/**
+ * The engine matches file ids exactly: the template's absolute path, and the
+ * real path the file resolver reports for an include.
+ */
+function fileIds(file) {
+  const absolute = path.resolve(file)
+  try {
+    return [absolute, realpathSync(absolute)]
+  } catch {
+    return [absolute]
   }
 }
 

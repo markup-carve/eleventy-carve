@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import carvePlugin, { createCarveRenderer } from '../src/index.js'
@@ -58,6 +58,14 @@ describe('lint options', () => {
     some.render('{{ part.crv }}\n')
     expect(all.warnings.map((w) => w.code)).toContain('broken-fragment-link')
     expect(some.warnings).toEqual([])
+  })
+
+  it('skip an included file listed by a symlinked path', () => {
+    const root = site({ 'real/part.crv': 'See [x](#gone).\n' })
+    symlinkSync(join(root, 'real'), join(root, 'linked'), 'dir')
+    const { render, warnings } = collecting({ lint: { ignoredFiles: [join(root, 'linked', 'part.crv')] } }, join(root, 'page.crv'))
+    render('{{ linked/part.crv }}\n')
+    expect(warnings).toEqual([])
   })
 
   it('report the deprecated glued cell alignment, not the braced one', () => {
