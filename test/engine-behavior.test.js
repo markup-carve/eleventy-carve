@@ -69,3 +69,14 @@ describe('engine behavior the renderer reaches', () => {
     }
   })
 })
+
+describe('render losses from an included file', () => {
+  it('name the file their position refers to', () => {
+    const { warnings } = render('Intro.\n\n{{ ../child.crv }}\n', {
+      files: { 'child.crv': 'Text.\n\n[x](javascript:alert(1))\n' },
+    })
+
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]).toMatch(/^Blanked a denied destination scheme \[destination-denied\] \(line 3, column 1 of .*child\.crv\)$/)
+  })
+})
