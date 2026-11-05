@@ -71,12 +71,17 @@ function reportLosses(result, options) {
 function reportLint(source, options, extensions, includeOptions) {
   if (!options.lint) return
   const { carveOptions = {} } = options
+  const lint = options.lint === true ? {} : options.lint
   const findings = lintCarve(source, {
     includes: includeOptions,
     asciiHeadingIds: carveOptions.asciiHeadingIds,
     lowercaseHeadingIds: carveOptions.lowercaseHeadingIds,
     extensions,
-    platforms: options.lint === true ? undefined : options.lint.platforms,
+    platforms: lint.platforms,
+    enabledRules: lint.enabledRules,
+    captionLookingParagraph: lint.captionLookingParagraph,
+    // The engine matches file ids exactly, and they are absolute paths here.
+    ignoredFiles: lint.ignoredFiles?.map((file) => path.resolve(file)),
   })
   for (const finding of findings) {
     const where = `line ${finding.line}, column ${finding.column}${finding.file ? ` of ${finding.file}` : ''}`
