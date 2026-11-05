@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
 import carvePlugin from '../src/index.js'
 
 // Eleventy comes from the example's install, like the build test.
@@ -18,7 +17,7 @@ async function build(files, options = {}) {
     mkdirSync(join(root, 'input', file, '..'), { recursive: true })
     writeFileSync(join(root, 'input', file), text)
   }
-  const { default: Eleventy } = await import(pathToFileURL(eleventyEntry.pathname).href)
+  const { default: Eleventy } = await import(eleventyEntry.href)
   const warnings = []
   const eleventy = new Eleventy(join(root, 'input'), join(root, '_site'), {
     quietMode: true,
@@ -41,6 +40,15 @@ describe('a template renders from the whole file', () => {
     const { warnings } = await build({ 'page.crv': '---\ntitle: Dup\n---\n\n# A\n\n# A\n' }, { lint: true })
     const dup = warnings.find((warning) => warning.code === 'duplicate-heading-id')
     expect(dup.line).toBe(7)
+  })
+
+  it('renders a computed string as given even when it is the end of the file', async () => {
+    const { pages } = await build({
+      '_includes/show.njk': '[{{ summary | safe }}]',
+      'page.crv': '---\nlayout: show.njk\neleventyComputed:\n  summary: "# Final"\n---\nEarlier.\n\n# Final',
+    })
+    expect(pages['page.crv'].content).not.toContain('Earlier.')
+    expect(pages['page.crv'].content).toContain('<h1>Final</h1>')
   })
 
   it('still renders a template with no frontmatter', async () => {

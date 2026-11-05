@@ -129,7 +129,8 @@ export function extractFrontmatter(source) {
  * Eleventy hands `compile` the body after gray-matter removed the frontmatter.
  * Carve must parse the whole file: otherwise a body starting with `---` is
  * read as frontmatter again, and positions shift by the frontmatter's lines.
- * A string that is not the tail of the file did not come from it.
+ * Only the exact body is swapped; `compile` also receives other strings for
+ * the same path, such as `eleventyComputed` values.
  */
 function templateSource(inputContent, inputPath) {
   if (typeof inputContent !== 'string' || !inputPath) return inputContent
@@ -139,7 +140,15 @@ function templateSource(inputContent, inputPath) {
   } catch {
     return inputContent
   }
-  return raw.endsWith(inputContent) ? raw : inputContent
+  if (inputContent === raw) return raw
+  const endLine = parse(raw).frontmatter?.pos?.endLine
+  return endLine !== undefined && inputContent === afterLine(raw, endLine) ? raw : inputContent
+}
+
+function afterLine(text, line) {
+  const breaks = /\r\n|\r|\n/g
+  for (let n = 0; n < line; n++) if (!breaks.exec(text)) return ''
+  return text.slice(breaks.lastIndex)
 }
 
 /**
