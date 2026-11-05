@@ -68,7 +68,7 @@ function reportLosses(result, options) {
  * Lint findings go out through `onWarning` like include warnings, with the
  * rule id as `code` and the position in the message.
  */
-function reportLint(source, options, extensions, includeOptions) {
+function reportLint(source, options, extensions, includeOptions, sourcePath) {
   if (!options.lint) return
   const { carveOptions = {} } = options
   const lint = options.lint === true ? {} : options.lint
@@ -77,6 +77,7 @@ function reportLint(source, options, extensions, includeOptions) {
     asciiHeadingIds: carveOptions.asciiHeadingIds,
     lowercaseHeadingIds: carveOptions.lowercaseHeadingIds,
     extensions,
+    fileId: sourcePath ? path.resolve(sourcePath) : undefined,
     platforms: lint.platforms,
     enabledRules: lint.enabledRules,
     captionLookingParagraph: lint.captionLookingParagraph,
@@ -122,11 +123,11 @@ export function createCarveRenderer(options = {}, sourcePath) {
       const expanded = expandIncludes(parse(source, { ...carveOptions, extensions }), source, { ...includeOptions, extensions })
       for (const dependency of expanded.dependencies) options.onDependency?.(dependency)
       for (const warning of expanded.warnings) options.onWarning?.(warning)
-      reportLint(source, options, extensions, includeOptions)
+      reportLint(source, options, extensions, includeOptions, sourcePath)
       const { asciiHeadingIds, lowercaseHeadingIds } = carveOptions
       return reportLosses(renderDocumentWithReport(resolve(expanded.doc, { asciiHeadingIds, lowercaseHeadingIds }), { ...carveOptions, extensions }), options)
     }
-    reportLint(source, options, extensions, undefined)
+    reportLint(source, options, extensions, undefined, sourcePath)
     return reportLosses(carveToHtmlWithReport(source, { ...carveOptions, extensions }), options)
   }
 }

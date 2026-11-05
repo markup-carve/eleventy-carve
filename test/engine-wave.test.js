@@ -60,6 +60,14 @@ describe('lint options', () => {
     expect(some.warnings).toEqual([])
   })
 
+  it('skip the template itself when includes are off', () => {
+    const root = site({})
+    const page = join(root, 'page.crv')
+    const { render, warnings } = collecting({ includes: false, lint: { ignoredFiles: [page] } }, page)
+    render('a\n\n---\n\nb\n')
+    expect(warnings).toEqual([])
+  })
+
   it('skip an included file listed by a symlinked path', () => {
     const root = site({ 'real/part.crv': 'See [x](#gone).\n' })
     symlinkSync(join(root, 'real'), join(root, 'linked'), 'dir')
