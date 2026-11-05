@@ -21,6 +21,7 @@
 
 import { carveToHtmlWithReport, expandIncludes, lintCarve, parse, renderDocumentWithReport, resolve } from '@markup-carve/carve'
 import { fileSystemResolver } from '@markup-carve/carve/node'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { parseFrontmatter } from './frontmatter.js'
 import yaml from 'js-yaml'
@@ -125,6 +126,23 @@ export function extractFrontmatter(source) {
 }
 
 /**
+ * Eleventy hands `compile` the body after gray-matter removed the frontmatter.
+ * Carve must parse the whole file: otherwise a body starting with `---` is
+ * read as frontmatter again, and positions shift by the frontmatter's lines.
+ * A string that is not the tail of the file did not come from it.
+ */
+function templateSource(inputContent, inputPath) {
+  if (typeof inputContent !== 'string' || !inputPath) return inputContent
+  let raw
+  try {
+    raw = readFileSync(inputPath, 'utf8')
+  } catch {
+    return inputContent
+  }
+  return raw.endsWith(inputContent) ? raw : inputContent
+}
+
+/**
  * Eleventy plugin entry point.
  *
  * @param {import("@11ty/eleventy").UserConfig} eleventyConfig
@@ -169,6 +187,7 @@ export default function carvePlugin(eleventyConfig, options = {}) {
     },
 
     compile: function (inputContent, inputPath) {
+      const source = templateSource(inputContent, inputPath)
       const renderCarve = createCarveRenderer({
         ...options,
         onDependency(dependency) {
@@ -184,9 +203,9 @@ export default function carvePlugin(eleventyConfig, options = {}) {
       // read `data.collections` from it.
       return async function (data) {
         const highlighter = await highlighterFor(options.highlight)
-        if (!highlighter) return renderCarve(inputContent, data)
+        if (!highlighter) return renderCarve(source, data)
         const collector = codeCollector(highlighter)
-        return collector.apply(renderCarve(inputContent, data, [collector.extension]))
+        return collector.apply(renderCarve(source, data, [collector.extension]))
       }
     },
   })
