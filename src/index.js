@@ -21,7 +21,7 @@
 
 import { carveToHtmlWithReport, expandIncludes, lintCarve, parse, renderDocumentWithReport, resolve } from '@markup-carve/carve'
 import { fileSystemResolver } from '@markup-carve/carve/node'
-import { readFileSync } from 'node:fs'
+import { readFileSync, realpathSync } from 'node:fs'
 import path from 'node:path'
 import { parseFrontmatter } from './frontmatter.js'
 import yaml from 'js-yaml'
@@ -68,19 +68,37 @@ function reportLosses(result, options) {
  * Lint findings go out through `onWarning` like include warnings, with the
  * rule id as `code` and the position in the message.
  */
-function reportLint(source, options, extensions, includeOptions) {
+function reportLint(source, options, extensions, includeOptions, sourcePath) {
   if (!options.lint) return
   const { carveOptions = {} } = options
+  const lint = options.lint === true ? {} : options.lint
   const findings = lintCarve(source, {
     includes: includeOptions,
     asciiHeadingIds: carveOptions.asciiHeadingIds,
     lowercaseHeadingIds: carveOptions.lowercaseHeadingIds,
     extensions,
-    platforms: options.lint === true ? undefined : options.lint.platforms,
+    fileId: sourcePath ? path.resolve(sourcePath) : undefined,
+    platforms: lint.platforms,
+    enabledRules: lint.enabledRules,
+    captionLookingParagraph: lint.captionLookingParagraph,
+    ignoredFiles: lint.ignoredFiles?.flatMap(fileIds),
   })
   for (const finding of findings) {
     const where = `line ${finding.line}, column ${finding.column}${finding.file ? ` of ${finding.file}` : ''}`
     options.onWarning?.({ ...finding, code: finding.rule, message: `${finding.message} [${finding.rule}] (${where})` })
+  }
+}
+
+/**
+ * The engine matches file ids exactly: the template's absolute path, and the
+ * real path the file resolver reports for an include.
+ */
+function fileIds(file) {
+  const absolute = path.resolve(file)
+  try {
+    return [absolute, realpathSync(absolute)]
+  } catch {
+    return [absolute]
   }
 }
 
@@ -105,11 +123,11 @@ export function createCarveRenderer(options = {}, sourcePath) {
       const expanded = expandIncludes(parse(source, { ...carveOptions, extensions }), source, { ...includeOptions, extensions })
       for (const dependency of expanded.dependencies) options.onDependency?.(dependency)
       for (const warning of expanded.warnings) options.onWarning?.(warning)
-      reportLint(source, options, extensions, includeOptions)
+      reportLint(source, options, extensions, includeOptions, sourcePath)
       const { asciiHeadingIds, lowercaseHeadingIds } = carveOptions
       return reportLosses(renderDocumentWithReport(resolve(expanded.doc, { asciiHeadingIds, lowercaseHeadingIds }), { ...carveOptions, extensions }), options)
     }
-    reportLint(source, options, extensions, undefined)
+    reportLint(source, options, extensions, undefined, sourcePath)
     return reportLosses(carveToHtmlWithReport(source, { ...carveOptions, extensions }), options)
   }
 }
