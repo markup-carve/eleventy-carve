@@ -50,7 +50,9 @@ import { codeCollector, highlighterFor } from './highlight.js'
  */
 function reportLosses(result, options) {
   for (const loss of result.losses) {
-    const at = loss.pos ? ` (line ${loss.pos.startLine}, column ${loss.pos.startColumn})` : ''
+    // Engines up to 0.1.15 carry the included file on `pos`.
+    const file = loss.file ?? loss.pos?.file
+    const at = loss.pos ? ` (line ${loss.pos.startLine}, column ${loss.pos.startColumn}${file ? ` of ${file}` : ''})` : ''
     options.onWarning?.({ ...loss, message: `${loss.message} [${loss.code}]${at}` })
   }
   if (result.truncated) {
