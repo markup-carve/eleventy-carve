@@ -22,6 +22,23 @@ env:
 # Each job declares timeout-minutes so a hung step fails fast
 # instead of inheriting the 360-minute GitHub default.
 jobs:
+  # A git dependency ships to every consumer: npm skips its integrity check, the
+  # install needs git and GitHub reachability, and a commit pin stops tracking
+  # the engine's releases. main may carry a git pin of a merged carve-js commit
+  # while an engine release is pending; this is where it is refused.
+  manifest:
+    name: No dependency is installed over git
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - run: node scripts/no-git-dependencies.mjs
+
   npm-credential:
     name: The npm credential can publish this package
     runs-on: ubuntu-latest
@@ -130,7 +147,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [npm-credential, tag]
+    needs: [manifest, npm-credential, tag]
     permissions:
       # `write`, not `read`, and the gate below is the whole reason: a DRAFT
       # release is invisible to a caller without push access, so under
@@ -254,7 +271,7 @@ jobs:
     name: Create the tag
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [npm-credential]
+    needs: [manifest, npm-credential]
     environment: release
     permissions:
       contents: write

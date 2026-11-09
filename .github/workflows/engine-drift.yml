@@ -54,6 +54,18 @@ jobs:
             echo "::error::${pkg} is not a dependency of this repo - this workflow is watching nothing"
             exit 1
           fi
+          # A git pin of a merged carve-js commit is allowed on main while an
+          # engine release is pending (release.yml refuses to publish it), so
+          # there is no registry range to compare. Only the last step runs.
+          case "${range}" in
+            github:*|git:*|git+*)
+              latest="$(npm view "${pkg}" version 2>/dev/null | tr -d "'\"" | awk '{print $NF}')"
+              echo "::notice::${pkg} is pinned to ${range}, not a registry range; the range and lockfile checks are skipped"
+              echo "latest=${latest}" >> "${GITHUB_OUTPUT}"
+              echo "git=true" >> "${GITHUB_OUTPUT}"
+              exit 0
+              ;;
+          esac
           # `npm view <pkg>@<range> version` prints ONE bare version when the
           # range matches a single release, and `<pkg>@<v> '<v>'` lines when it
           # matches several. Taking the last WHITESPACE-SEPARATED FIELD reads
@@ -87,6 +99,7 @@ jobs:
           echo "resolved=${resolved}" >> "${GITHUB_OUTPUT}"
 
       - name: Compare the LOCKFILE against what the range resolves to
+        if: steps.registry.outputs.git != 'true'
         run: |
           set -euo pipefail
           pkg='@markup-carve/carve'
