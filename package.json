@@ -45,7 +45,7 @@
   },
   "dependencies": {
     "@iarna/toml": "^2.2.5",
-    "@markup-carve/carve": "^0.1.14",
+    "@markup-carve/carve": "github:markup-carve/carve-js#99ad0d2a4e5ec192440c3e5a1b4b95f50ed3cfcf",
     "js-yaml": "^4.1.0"
   },
   "devDependencies": {

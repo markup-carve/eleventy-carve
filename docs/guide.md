@@ -70,7 +70,7 @@ See [the project](https://markup-carve.github.io/carve/).
 | `carveOptions`    | `object`   | `{}`               | Extra carve-js options (`ParseOptions` + `RenderOptions`), e.g. `{ lowercaseHeadingIds: true }`. |
 | `includes`        | `boolean`  | `true`              | Expand `{{ path }}` directives for file-backed templates.                     |
 | `includeRoot`     | `string`   | document directory | Absolute containment root for included files.                                |
-| `lint`            | `boolean \| { platforms }` | `false` | Report carve-js lint findings through `onWarning`. See [Lint](#lint).         |
+| `lint`            | `boolean \| object` | `false`   | Report carve-js lint findings through `onWarning`. See [Lint](#lint).         |
 | `wikilinks`       | `boolean \| object` | `false`   | Parse `[[Page]]` links and resolve them against a collection. See [Wiki links](#wiki-links). |
 | `highlight`       | `boolean \| object` | `false`   | Highlight fenced code with Shiki and the Carve grammar. See [Syntax highlighting](#syntax-highlighting). |
 | `onWarning`       | `function` | logs to console    | Receives include warnings, render losses, lint findings and wiki-link warnings. |
@@ -102,8 +102,23 @@ includes. Each finding reaches `onWarning` with `code` set to the rule id, the
 `line`, `column` and, for an included file, `file`, and a message such as
 `Link to "#nowhere" matches no id in this document, so the link goes nowhere. [broken-fragment-link] (line 5, column 7)`.
 Without an `onWarning` hook the plugin logs it to the console. Lint never fails
-the build. `lint: { platforms: ['github'] }` adds the rules for text GitHub
-re-links, such as a bare `#12`.
+the build. Advisory findings, such as a thematic break not written `***`,
+carry `severity: 'Hint'`; filter on it in `onWarning` to keep them out of the
+build log. A `%% carve-lint-disable-next-line <rule>` comment in the template
+suppresses a finding.
+
+Pass an object to configure the linter:
+
+```js
+eleventyConfig.addPlugin(carvePlugin, {
+  lint: {
+    platforms: ['github'], // rules for text GitHub re-links, such as a bare #12
+    enabledRules: ['non-descriptive-link-text'], // opt-in authoring rules
+    captionLookingParagraph: true, // hint at a paragraph that looks like a caption
+    ignoredFiles: ['src/legacy/notes.crv'], // resolved against the working directory
+  },
+})
+```
 
 ## Wiki links
 
