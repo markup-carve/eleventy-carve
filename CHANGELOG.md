@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.1.5] - 2026-11-11
+## [0.1.5] - 2026-11-12
 
 Requires the Carve engine 0.1.16. Templates render from the whole file, and lint takes the new engine options.
 
