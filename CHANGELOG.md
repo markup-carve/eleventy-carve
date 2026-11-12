@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.1.5] - 2026-11-12
+
+Requires the Carve engine 0.1.16. Templates render from the whole file, and lint takes the new engine options.
+
+### Breaking
+
+- Require `@markup-carve/carve` 0.1.16 (#45, #46).
+- Lint rule `a11y/heading-jump` is no longer an alias; use `heading-level-skip`. With `lint` on, the engine also reports advisory hints (`severity: 'Hint'`, such as `thematic-break-spelling` for a `---` break) and the old `|=>` cell alignment as `deprecated-cell-alignment` (write `|={>}`).
+
+### Fixes
+
+- A template renders from the whole file, so a body that starts with a dash line is no longer dropped and lint and loss positions match the file (#43).
+- A render loss inside an included file names that file (#44).
+
+### Improvements
+
+- The `lint` option object takes `enabledRules`, `captionLookingParagraph` and `ignoredFiles` (#45).
+
+**Full Changelog**: https://github.com/markup-carve/eleventy-carve/compare/0.1.4...0.1.5
+
 ## [0.1.4] - 2026-10-24
 
 Optional Carve code highlighting follows the current grammar. Rendering and Markdown loss reports follow the published Carve engine.
