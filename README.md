@@ -1,6 +1,6 @@
 # eleventy-carve
 
-Eleventy plugin for `.crv` templates, using @markup-carve/carve 0.1.16 or later. Carve frontmatter joins the Eleventy data cascade. Read the [Carve documentation](https://markup-carve.github.io/carve/) for the language syntax.
+Eleventy plugin for `.crv` templates, using @markup-carve/carve 0.1.17 or later. Carve frontmatter joins the Eleventy data cascade. Read the [Carve documentation](https://markup-carve.github.io/carve/) for the language syntax.
 
 ## Install
 
