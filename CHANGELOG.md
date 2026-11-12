@@ -2,11 +2,12 @@
 
 ## [0.1.5] - 2026-11-12
 
-Requires the Carve engine 0.1.16. Templates render from the whole file, and lint takes the new engine options.
+Requires the Carve engine 0.1.17. Templates render from the whole file, and lint takes the new engine options.
 
 ### Breaking
 
-- Require `@markup-carve/carve` 0.1.16 (#45, #46).
+- Require `@markup-carve/carve` 0.1.17 (#45, #46, #48).
+- The optional `@markup-carve/carve-grammars` peer for fence highlighting requires 0.1.23 (#48).
 - Lint rule `a11y/heading-jump` is no longer an alias; use `heading-level-skip`. With `lint` on, the engine also reports advisory hints (`severity: 'Hint'`, such as `thematic-break-spelling` for a `---` break) and the old `|=>` cell alignment as `deprecated-cell-alignment` (write `|={>}`).
 
 ### Fixes
@@ -17,6 +18,7 @@ Requires the Carve engine 0.1.16. Templates render from the whole file, and lint
 ### Improvements
 
 - The `lint` option object takes `enabledRules`, `captionLookingParagraph` and `ignoredFiles` (#45).
+- Rendering is faster with carve-js 0.1.17 (#48).
 
 **Full Changelog**: https://github.com/markup-carve/eleventy-carve/compare/0.1.4...0.1.5
 
