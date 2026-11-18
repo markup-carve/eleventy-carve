@@ -1,57 +1,30 @@
-# eleventy-carve guide
+# eleventy-carve 0.2 guide
 
-## Background
+The plugin registers `.crv` files as Eleventy templates. It renders them with the public Carve 0.2 library entry and places YAML, TOML, or JSON frontmatter in Eleventy's data cascade. This branch pins a commit of the unreleased JavaScript engine and requires Node.js 20 or newer.
 
-An [Eleventy](https://www.11ty.dev/) (11ty) plugin that adds the
-[Carve](https://markup-carve.github.io/carve/) markup language as a first-class
-template format. Carve files (`.crv`) become renderable Eleventy
-templates, with their bodies converted to HTML by
-[carve-js](https://github.com/markup-carve/carve-js) and their frontmatter
-folded into Eleventy's data cascade.
-
-Package name: `@markup-carve/eleventy-carve`.
-
-## Requirements
-
-- Node.js 18+ (developed and tested on Node 22)
-- Eleventy 3.x (ESM). Declared as a peer dependency (`@11ty/eleventy >=3.0.0`).
-
-## Installation notes
-
-`@markup-carve/carve` (the rendering engine) comes from npm as an ordinary
-dependency, so `npm install` above is all that is needed.
-
-## Usage
-
-`eleventy.config.js` (ESM):
+## Setup
 
 ```js
 import carvePlugin from '@markup-carve/eleventy-carve'
 
-export default function (eleventyConfig) {
-  eleventyConfig.addPlugin(carvePlugin)
-
-  return {
-    dir: { input: 'input', output: '_site', includes: '_includes' },
-    templateFormats: ['crv'],
-  }
+export default function (config) {
+  config.addPlugin(carvePlugin, {
+    lint: { rules: { 'non-descriptive-link-text': 'on' } },
+  })
 }
 ```
 
-Now any `.crv` file under your input directory is built like a
-Markdown template would be.
+A page can use Carve 0.2 syntax:
 
-### Example Carve page
-
-```
+```crv
 ---
-title: Carve Home
+title: Home
 layout: base.njk
 ---
 
-# Welcome
+= Welcome
 
-This page is written in *Carve*.
+This is *Carve*.
 
 - one
 - two
@@ -61,186 +34,90 @@ See [the project](https://markup-carve.github.io/carve/).
 
 ## Options
 
-`addPlugin(carvePlugin, options)` accepts:
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `templateFormats` | `['crv']` | File extensions registered as Carve templates. |
+| `extensions` | `[]` | Carve 0.2 `ExtensionDefinition` registrations. |
+| `carveOptions` | `{}` | Carve 0.2 render options, including `renderers`, `headingIds`, `rawHtml`, and `urlPolicy`. |
+| `includes` | `true` | Expand includes in file-backed templates. |
+| `includeRoot` | template directory | Absolute containment root for included files. |
+| `lint` | `false` | Send 0.2 lint diagnostics to `onWarning`; use `rules` and `platforms` to configure it. |
+| `highlight` | `false` | Highlight supported fenced code with Shiki. |
+| `wikilinks` | `false` | Reserved for the 0.2 wiki parser hook; enabling it currently throws a clear error. |
+| `onWarning` | console | Receive parse, lint, and render diagnostics. |
+| `onDependency` | none | Receive included files for a custom watch integration. |
 
-| Option            | Type       | Default            | Description                                                                 |
-| ----------------- | ---------- | ------------------ | --------------------------------------------------------------------------- |
-| `templateFormats` | `string[]` | `["crv"]`          | File extensions to register as Carve templates.                             |
-| `extensions`      | `array`    | `[]`               | carve-js `CarveExtension` list (e.g. citations, mermaid, details).          |
-| `carveOptions`    | `object`   | `{}`               | Extra carve-js options (`ParseOptions` + `RenderOptions`), e.g. `{ lowercaseHeadingIds: true }`. |
-| `includes`        | `boolean`  | `true`              | Expand `{{ path }}` directives for file-backed templates.                     |
-| `includeRoot`     | `string`   | document directory | Absolute containment root for included files.                                |
-| `lint`            | `boolean \| object` | `false`   | Report carve-js lint findings through `onWarning`. See [Lint](#lint).         |
-| `wikilinks`       | `boolean \| object` | `false`   | Parse `[[Page]]` links and resolve them against a collection. See [Wiki links](#wiki-links). |
-| `highlight`       | `boolean \| object` | `false`   | Highlight fenced code with Shiki and the Carve grammar. See [Syntax highlighting](#syntax-highlighting). |
-| `onWarning`       | `function` | logs to console    | Receives include warnings, render losses, lint findings and wiki-link warnings. |
+The engine's `headingIds` choices include `off`, `keep-case`, `lower`, `ascii`, and `ascii-lower`. The old `asciiHeadingIds` and `lowercaseHeadingIds` booleans still map to those values, but `headingIds` is preferred. Set only one form. The old `safeMode` boolean maps to the inverse of `rawHtml`; `rawHtml` and `urlPolicy` are the 0.2 controls. The default keeps raw HTML off and denies unsafe URL schemes.
 
-Example with options:
+Pass 0.2 extension definitions through `extensions` and trusted renderer functions through `carveOptions.renderers`. The 0.1 `CarveExtension` objects and helper factories are not accepted by the 0.2 entry. For example, the engine's standard tabs registration is:
 
 ```js
-import carvePlugin from '@markup-carve/eleventy-carve'
-import { mermaid } from '@markup-carve/carve'
+import { tabsExtensions, tabsRenderer } from '@markup-carve/carve/v2'
 
-export default function (eleventyConfig) {
-  eleventyConfig.addPlugin(carvePlugin, {
-    extensions: [mermaid()],
-    carveOptions: { lowercaseHeadingIds: true },
-  })
-}
+config.addPlugin(carvePlugin, {
+  extensions: tabsExtensions,
+  carveOptions: { renderers: { 'carve.tabs': tabsRenderer } },
+})
 ```
 
-Include paths resolve relative to the template. Resolved files are added to
-Eleventy's watch targets. Set `includes: false` to leave directives literal.
-`{{ shared.crv @region:intro }}` splices only the lines between
-`%% #region intro` and `%% #endregion`; a missing region is reported through
-`onWarning` with the rule `include-region-invalid`.
+The 0.2 extension contract is provisional. Trusted renderers must apply the host's URL policy when they create links.
+
+## Includes and watch targets
+
+`{{ chapter.crv }}` resolves relative to the template. The default containment root is the template directory. Set an absolute `includeRoot` to share files across directories. A successfully read include is added to Eleventy's watch targets. `includes: false` leaves the directive unexpanded. A custom 0.2 include resolver can be passed as `carveOptions.includes`; the engine controls its depth and byte limits.
+
+Parse and include diagnostics reach `onWarning`. Each warning has `code`, lowercase `severity`, `channel`, `message`, and, when available, `line`, `column`, and `file`. Render losses use `channel: 'render-loss'`. The callback does not fail the build by itself.
 
 ## Lint
 
-`lint: true` runs the carve-js linter on every Carve template, following its
-includes. Each finding reaches `onWarning` with `code` set to the rule id, the
-`line`, `column` and, for an included file, `file`, and a message such as
-`Link to "#nowhere" matches no id in this document, so the link goes nowhere. [broken-fragment-link] (line 5, column 7)`.
-Without an `onWarning` hook the plugin logs it to the console. Lint never fails
-the build. Advisory findings, such as a thematic break not written `***`,
-carry `severity: 'Hint'`; filter on it in `onWarning` to keep them out of the
-build log. A `%% carve-lint-disable-next-line <rule>` comment in the template
-suppresses a finding.
-
-Pass an object to configure the linter:
+Set `lint: true` for default rules or pass an object:
 
 ```js
-eleventyConfig.addPlugin(carvePlugin, {
+config.addPlugin(carvePlugin, {
   lint: {
-    platforms: ['github'], // rules for text GitHub re-links, such as a bare #12
-    enabledRules: ['non-descriptive-link-text'], // opt-in authoring rules
-    captionLookingParagraph: true, // hint at a paragraph that looks like a caption
-    ignoredFiles: ['src/legacy/notes.crv'], // resolved against the working directory
+    rules: { 'non-descriptive-link-text': 'on' },
+    platforms: ['github'],
+    ignoredFiles: ['src/legacy/page.crv'],
   },
 })
 ```
 
-## Wiki links
-
-`wikilinks` enables the carve-js `[[Page]]` syntax (`[[Page|label]]`,
-`[[Page#anchor]]`, `[[folder/page]]`) and links each target to the URL of a page
-in an Eleventy collection:
-
-```js
-eleventyConfig.addPlugin(carvePlugin, {
-  wikilinks: {
-    collection: 'all', // default
-    // Optional, tried first. Return undefined to fall through to the collection.
-    resolve: (page, data) => (page === 'Changelog' ? '/changelog/' : undefined),
-    cssClass: 'wikilink',
-    newWindow: false,
-  },
-})
-```
-
-A name is compared as a slug against, in order, the page's path stem without
-the input directory prefix (`[[docs/getting-started]]`), its file slug
-(`[[Getting Started]]` finds `getting-started.crv`), and its `title`. The link
-goes to the page's `url`, so permalinks are honored. Pages with
-`permalink: false` are skipped. A name that matches nothing or several pages
-reaches `onWarning` (`wikilink-unresolved`, `wikilink-ambiguous`) and links to
-the plain slug. `wikilinks: true` uses the defaults.
+The `rules` map uses `on` and `off`. The old `enabledRules` list and `captionLookingParagraph` boolean are translated for compatibility; `ignoredFiles` is filtered by this plugin. Suppression comments in the source still work. Lint uses the 0.2 diagnostic codes and lowercase severity values.
 
 ## Syntax highlighting
 
-`highlight: true` highlights fenced code with Shiki. Install the two optional
-peer dependencies first:
-
-```bash
-npm install shiki @markup-carve/carve-grammars
-```
-
-Pass an object to configure Shiki: `theme` (default `github-dark`) or `themes`
-with `defaultColor`, extra `langs`, `langAlias` and `transformers`.
+Install the optional Shiki and Carve grammar peer dependencies, then set `highlight: true` or pass Shiki options such as `theme`, `themes`, `langs`, `langAlias`, and `transformers`. The plugin registers a provisional 0.2 fence extension for each supported language in the template and renders its HTML with Shiki. Fences without a language or a supported grammar keep the engine's plain code block. Fence IDs, classes, attributes, and titles are carried to the highlighted element.
 
 ```js
-eleventyConfig.addPlugin(carvePlugin, {
+config.addPlugin(carvePlugin, {
   highlight: { themes: { light: 'github-light', dark: 'github-dark' } },
 })
 ```
 
-`carve` and `crv` fences use the Carve grammar from
-`@markup-carve/carve-grammars`, with its theme colors for Carve-specific scopes
-and the marks for strikethrough, sub/superscript and highlight. Load its
-stylesheet, `@markup-carve/carve-grammars/shiki/carve.css`, in your layout.
-A fence's `{#id .class key=value}` attributes and quoted title land on the
-highlighted `<pre>`, which also carries `data-language`. A fence without a
-language, or in a language Shiki does not bundle, keeps the plain
-`<pre><code class="language-x">` output.
+Load the Carve grammar stylesheet in your layout when highlighting Carve fences.
 
-This is separate from `@11ty/eleventy-plugin-syntaxhighlight`, which highlights
-Markdown and Nunjucks code with Prism and does not see Carve templates.
+## Wiki links pending in the engine
+
+The 0.1 `wikilinks` option resolved `[[Page]]`, `[[Page|label]]`, and folder targets against Eleventy collections. The 0.2 parser currently reads those spellings as text. The public extension matcher cannot claim them, so enabling `wikilinks` throws `wikilinks are not available yet in Carve 0.2`. The option remains in the plugin, and [the engine parser hook request](https://github.com/markup-carve/carve-js/issues/5047) tracks the gap. Use ordinary Carve links until it lands.
 
 ## Frontmatter
 
-Carve frontmatter is a fenced metadata block at the top of the file. All three
-Carve frontmatter flavors are supported and flow into Eleventy's data cascade
-(so `title`, `layout`, `permalink`, `tags`, `date`, etc. behave exactly as in a
-Markdown template):
+A leading `---` block is YAML; `---toml` and `---json` select the other formats. The plugin reads the 0.2 `frontmatter` tree child and deserializes its `value` for Eleventy. It also registers matching gray-matter engines so Eleventy's own frontmatter pass does not reject an explicit format token.
 
-YAML (bare fence, the default):
-
-```
----
-title: Hello
-layout: base.njk
-tags: [post]
----
-```
-
-TOML (`---toml` token):
-
-```
+```crv
 ---toml
-title = "Hello"
-permalink = "/custom-url/index.html"
+title = "About"
+permalink = "/about-us/index.html"
 ---
+
+= About
 ```
 
-JSON (`---json` token):
-
-```
----json
-{ "title": "Hello", "draft": true }
----
-```
-
-The plugin uses carve-js's own parser to locate the frontmatter block (so the
-syntax stays in lockstep with the engine) and then deserializes it with
-`js-yaml` / `@iarna/toml` / `JSON.parse`.
-
-> [!NOTE]
-> The plugin registers matching gray-matter engines via
-> `setFrontMatterParsingOptions` so Eleventy's built-in frontmatter pass does
-> not reject the `---toml` / `---json` tokens. This is a global Eleventy setting;
-> if your project already uses custom frontmatter engines, merge them rather than
-> letting the plugin overwrite yours.
-
-## Public API
-
-The module also exports helpers (useful for testing or custom pipelines):
+## Public helpers
 
 ```js
-import carvePlugin, {
-  createCarveRenderer, // (options?, sourcePath?) => (source, data?) => html
-  extractFrontmatter,  // (source) => dataObject
-} from '@markup-carve/eleventy-carve'
+import carvePlugin, { createCarveRenderer, extractFrontmatter } from '@markup-carve/eleventy-carve'
+
+const html = createCarveRenderer()('= Hello\n')
+const data = extractFrontmatter('---\ntitle: Hello\n---\n')
 ```
-
-## What is verified
-
-This plugin ships with tests that run for real:
-
-- A unit test of the compile function (heading, bold, list, link, frontmatter
-  stripping, option forwarding) and of frontmatter extraction (YAML / TOML /
-  JSON).
-- A full Eleventy build of `example/` that asserts the converted Carve HTML
-  appears in `_site/`, that the YAML `title` reached the layout, and that the
-  TOML `permalink` was honored.
-
-Run them with `npm test`.

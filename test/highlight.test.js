@@ -7,7 +7,7 @@ import { codeCollector, createCarveHighlighter, highlighterFor } from '../src/hi
 
 async function render(source, options = {}) {
   const collector = codeCollector(await createCarveHighlighter(options))
-  return collector.apply(createCarveRenderer()(source, undefined, [collector.extension]))
+  return collector.apply(createCarveRenderer()(source, undefined, collector))
 }
 
 describe('Shiki highlighting', () => {
@@ -27,7 +27,7 @@ describe('Shiki highlighting', () => {
     const root = mkdtempSync(join(tmpdir(), 'eleventy-carve-shiki-'))
     try {
       const collector = codeCollector(await createCarveHighlighter())
-      const html = await collector.apply(createCarveRenderer({}, join(root, 'page.crv'))('``` ts\nlet a\n```\n', undefined, [collector.extension]))
+      const html = await collector.apply(createCarveRenderer({}, join(root, 'page.crv'))('``` ts\nlet a\n```\n', undefined, collector))
       expect(html).toContain('<pre class="shiki github-dark"')
     } finally {
       rmSync(root, { recursive: true, force: true })
