@@ -3,90 +3,83 @@
  * language as a first-class template format.
  *
  * Carve files (`.crv`) become renderable Eleventy templates:
- *   - the body is converted to HTML by carve-js (`carveToHtml`),
+ *   - the body is converted to HTML by the Carve 0.2 public API,
  *   - leading Carve frontmatter (`---` / `---toml` / `---json`) is deserialized
  *     and folded into Eleventy's data cascade (so `title`, `layout`,
  *     `permalink`, `tags`, etc. behave like they do in Markdown templates).
  *
  * Usage (eleventy.config.js, ESM):
  *
- *   import carvePlugin from "@markup-carve/eleventy";
+ *   import carvePlugin from "@markup-carve/eleventy-carve";
  *   export default function (eleventyConfig) {
  *     eleventyConfig.addPlugin(carvePlugin, {
- *       // extensions: [ ...carve-js extensions ],
- *       // carveOptions: { ...other carve-js ParseOptions / RenderOptions },
+ *       // extensions: [ ...Carve 0.2 extension definitions ],
+ *       // carveOptions: { ...Carve 0.2 render options },
  *     });
  *   }
  */
 
-import { carveToHtmlWithReport, expandIncludes, lintCarve, parse, renderDocumentWithReport, resolve } from '@markup-carve/carve'
-import { fileSystemResolver } from '@markup-carve/carve/node'
+import { includeDependencies, lint, parse, parseWithDiagnostics, renderWithDiagnostics, stringOffsetOfByte } from '@markup-carve/carve/v2'
+import { fileSystemResolver } from '@markup-carve/carve/v2/node'
 import { readFileSync, realpathSync } from 'node:fs'
 import path from 'node:path'
 import { parseFrontmatter } from './frontmatter.js'
 import yaml from 'js-yaml'
 import toml from '@iarna/toml'
-import { wikilinksExtension } from './wikilinks.js'
 import { codeCollector, highlighterFor } from './highlight.js'
 
-/**
- * Build the function Eleventy calls to turn one Carve source string into HTML.
- * Exposed separately so it can be unit tested without a full Eleventy build.
- *
- * @param {object} [options]
- * @param {Array} [options.extensions] - carve-js CarveExtension list
- * @param {object} [options.carveOptions] - extra carve-js ParseOptions/RenderOptions
- * @returns {(source: string) => string}
- */
-/**
- * A render loss is the engine saying it dropped something the author wrote: a
- * blanked `javascript:` destination, a flattened ruby annotation, a raw block
- * for another format. It goes out through the same hook the include warnings
- * use, so a caller that already handles those needs no change.
- *
- * @param {{ value: string, losses: Array<object>, totalLosses: number, truncated: boolean }} result
- * @param {object} options
- * @returns {string}
- */
-function reportLosses(result, options) {
-  for (const loss of result.losses) {
-    // Engines up to 0.1.15 carry the included file on `pos`.
-    const file = loss.file ?? loss.pos?.file
-    const at = loss.pos ? ` (line ${loss.pos.startLine}, column ${loss.pos.startColumn}${file ? ` of ${file}` : ''})` : ''
-    options.onWarning?.({ ...loss, message: `${loss.message} [${loss.code}]${at}` })
+/** Translate the plugin's compatibility flags into 0.2 render options. */
+function renderOptions(options) {
+  const { asciiHeadingIds, lowercaseHeadingIds, safeMode, ...rest } = options
+  if (safeMode !== undefined) {
+    if (rest.rawHtml !== undefined) throw new Error('eleventy-carve: set only rawHtml')
+    rest.rawHtml = !safeMode
   }
-  if (result.truncated) {
-    options.onWarning?.({
-      code: 'render-losses-truncated',
-      message: `${result.totalLosses} render losses in total; the rest were not reported`,
-    })
+  if (asciiHeadingIds !== undefined || lowercaseHeadingIds !== undefined) {
+    if (rest.headingIds !== undefined) throw new Error('eleventy-carve: set only headingIds')
+    rest.headingIds = asciiHeadingIds ? (lowercaseHeadingIds ? 'ascii-lower' : 'ascii') : lowercaseHeadingIds ? 'lower' : 'keep-case'
   }
-  return result.value
+  return rest
 }
 
-/**
- * Lint findings go out through `onWarning` like include warnings, with the
- * rule id as `code` and the position in the message.
- */
-function reportLint(source, options, extensions, includeOptions, sourcePath) {
-  if (!options.lint) return
-  const { carveOptions = {} } = options
-  const lint = options.lint === true ? {} : options.lint
-  const findings = lintCarve(source, {
-    includes: includeOptions,
-    asciiHeadingIds: carveOptions.asciiHeadingIds,
-    lowercaseHeadingIds: carveOptions.lowercaseHeadingIds,
-    extensions,
-    fileId: sourcePath ? path.resolve(sourcePath) : undefined,
-    platforms: lint.platforms,
-    enabledRules: lint.enabledRules,
-    captionLookingParagraph: lint.captionLookingParagraph,
-    ignoredFiles: lint.ignoredFiles?.flatMap(fileIds),
-  })
-  for (const finding of findings) {
-    const where = `line ${finding.line}, column ${finding.column}${finding.file ? ` of ${finding.file}` : ''}`
-    options.onWarning?.({ ...finding, code: finding.rule, message: `${finding.message} [${finding.rule}] (${where})` })
+function location(source, diagnostic) {
+  if (!diagnostic.range) return {}
+  let text = source
+  if (diagnostic.file) {
+    try { text = readFileSync(diagnostic.file, 'utf8') } catch { return {} }
   }
+  const offset = stringOffsetOfByte(text, diagnostic.range.startOffset)
+  const before = text.slice(0, offset)
+  const lines = before.split(/\r\n|\r|\n/)
+  return { line: lines.length, column: [...lines.at(-1)].length + 1 }
+}
+
+function reportDiagnostics(source, result, options, root, seen = new Set()) {
+  for (const diagnostic of result.diagnostics) {
+    const key = JSON.stringify([diagnostic.channel, diagnostic.code, diagnostic.path, diagnostic.file, diagnostic.range])
+    if (seen.has(key)) continue
+    seen.add(key)
+    const file = diagnostic.file && root ? path.resolve(root, diagnostic.file) : diagnostic.file
+    const { line, column } = location(source, { ...diagnostic, file })
+    const where = line === undefined ? '' : ` (line ${line}, column ${column}${file ? ` of ${file}` : ''})`
+    options.onWarning?.({ ...diagnostic, file, rule: diagnostic.code, line, column, message: `${diagnostic.message} [${diagnostic.code}]${where}` })
+  }
+  if (result.suppressedDiagnostics) options.onWarning?.({
+    code: 'diagnostics-truncated',
+    message: `${result.suppressedDiagnostics} additional diagnostics were suppressed`,
+  })
+}
+
+function reportLint(source, options, extensions, includes, root, sourcePath) {
+  if (!options.lint) return
+  const settings = options.lint === true ? {} : options.lint
+  const rules = { ...settings.rules }
+  for (const name of settings.enabledRules ?? []) rules[name] = 'on'
+  if (settings.captionLookingParagraph !== undefined) rules['caption-looking-paragraph'] = settings.captionLookingParagraph ? 'on' : 'off'
+  const ignored = new Set(settings.ignoredFiles?.flatMap(fileIds) ?? [])
+  const findings = lint(source, { rules, platforms: settings.platforms, includes, extensions })
+    .filter((finding) => finding.channel === 'lint' && !ignored.has(finding.file && root ? path.resolve(root, finding.file) : sourcePath ? path.resolve(sourcePath) : undefined))
+  reportDiagnostics(source, { diagnostics: findings, suppressedDiagnostics: 0 }, options, root)
 }
 
 /**
@@ -102,33 +95,45 @@ function fileIds(file) {
   }
 }
 
+/**
+ * Build the function Eleventy calls to turn one Carve source string into HTML.
+ * Exposed separately so it can be tested without a full Eleventy build.
+ *
+ * @param {object} [options]
+ * @param {Array} [options.extensions] - Carve 0.2 extension definitions
+ * @param {object} [options.carveOptions] - Carve 0.2 render options
+ * @returns {(source: string) => string}
+ */
 export function createCarveRenderer(options = {}, sourcePath) {
-  const { carveOptions = {} } = options
+  const carveOptions = renderOptions(options.carveOptions ?? {})
   return function renderCarve(source, data, extraExtensions = []) {
-    const wiki = options.wikilinks
-      ? [wikilinksExtension(options.wikilinks === true ? {} : options.wikilinks, data, (warning) => options.onWarning?.(warning))]
-      : []
-    const extensions = [...(options.extensions ?? []), ...wiki, ...extraExtensions]
-    const includeOptions = sourcePath && (options.includes ?? true)
+    if (options.wikilinks) throw new Error('eleventy-carve: wikilinks are not available yet in Carve 0.2')
+    const extensions = [...(options.extensions ?? carveOptions.extensions ?? []), ...(Array.isArray(extraExtensions) ? extraExtensions : [])]
+    const root = options.includeRoot ?? (sourcePath ? path.dirname(path.resolve(sourcePath)) : undefined)
+    if (options.includeRoot && !path.isAbsolute(options.includeRoot)) throw new Error('eleventy-carve: includeRoot must be an absolute path')
+    const includes = carveOptions.includes ?? (sourcePath && (options.includes ?? true)
       ? {
-          // A configured root reaches the resolver unchanged, so its absolute-path
-          // refusal (PART 9 section 19, I10) still fires. Resolving it here would
-          // root containment at the process working directory instead. Eleventy's
-          // own inputPath is relative to that directory, so the default still resolves.
-          resolve: fileSystemResolver(options.includeRoot ?? path.dirname(path.resolve(sourcePath))),
-          sourcePath: path.resolve(sourcePath),
+          resolver: fileSystemResolver(root),
+          file: path.relative(root, path.resolve(sourcePath)).replaceAll(path.sep, '/'),
         }
-      : undefined
-    if (includeOptions) {
-      const expanded = expandIncludes(parse(source, { ...carveOptions, extensions }), source, { ...includeOptions, extensions })
-      for (const dependency of expanded.dependencies) options.onDependency?.(dependency)
-      for (const warning of expanded.warnings) options.onWarning?.(warning)
-      reportLint(source, options, extensions, includeOptions, sourcePath)
-      const { asciiHeadingIds, lowercaseHeadingIds } = carveOptions
-      return reportLosses(renderDocumentWithReport(resolve(expanded.doc, { asciiHeadingIds, lowercaseHeadingIds }), { ...carveOptions, extensions }), options)
+      : undefined)
+    let parsed = parseWithDiagnostics(source, { extensions, includes, headingIds: carveOptions.headingIds })
+    let renderers = carveOptions.renderers
+    if (extraExtensions?.forDocument) {
+      const registrations = extraExtensions.forDocument(parsed.document)
+      if (registrations.extensions.length) {
+        extensions.push(...registrations.extensions)
+        renderers = { ...renderers, ...registrations.renderers }
+        parsed = parseWithDiagnostics(source, { extensions, includes, headingIds: carveOptions.headingIds })
+      }
     }
-    reportLint(source, options, extensions, undefined, sourcePath)
-    return reportLosses(carveToHtmlWithReport(source, { ...carveOptions, extensions }), options)
+    for (const dependency of includeDependencies(parsed.document)) options.onDependency?.({ id: dependency.file && root ? path.resolve(root, dependency.file) : dependency.file ?? dependency.path, resolved: dependency.read, ...dependency })
+    const seen = new Set()
+    reportDiagnostics(source, parsed, options, root, seen)
+    reportLint(source, options, extensions, includes, root, sourcePath)
+    const rendered = renderWithDiagnostics(parsed.document, { ...carveOptions, extensions, renderers })
+    reportDiagnostics(source, rendered, options, root, seen)
+    return rendered.html
   }
 }
 
@@ -142,7 +147,7 @@ export function createCarveRenderer(options = {}, sourcePath) {
  */
 export function extractFrontmatter(source) {
   const doc = parse(source)
-  return parseFrontmatter(doc.frontmatter)
+  return parseFrontmatter(doc.children.find((node) => node.type === 'frontmatter'))
 }
 
 /**
@@ -161,7 +166,7 @@ function templateSource(inputContent, inputPath) {
     return inputContent
   }
   if (inputContent === raw) return raw
-  const endLine = parse(raw).frontmatter?.pos?.endLine
+  const endLine = parse(raw).children.find((node) => node.type === 'frontmatter')?.pos?.endLine
   return endLine !== undefined && inputContent === afterLine(raw, endLine) ? raw : inputContent
 }
 
@@ -177,8 +182,8 @@ function afterLine(text, line) {
  * @param {import("@11ty/eleventy").UserConfig} eleventyConfig
  * @param {object} [options]
  * @param {string[]} [options.templateFormats] - defaults to ["crv"]
- * @param {Array} [options.extensions] - carve-js extension list
- * @param {object} [options.carveOptions] - extra carve-js options
+ * @param {Array} [options.extensions] - Carve 0.2 extension definitions
+ * @param {object} [options.carveOptions] - Carve 0.2 render options
  */
 export default function carvePlugin(eleventyConfig, options = {}) {
   const formats = options.templateFormats ?? ['crv']
@@ -228,13 +233,12 @@ export default function carvePlugin(eleventyConfig, options = {}) {
           else console.warn(`eleventy-carve: ${warning.message}`)
         },
       }, inputPath)
-      // Eleventy calls this once per output with the merged data; wiki links
-      // read `data.collections` from it.
+      // Eleventy calls this once per output with the merged data.
       return async function (data) {
         const highlighter = await highlighterFor(options.highlight)
         if (!highlighter) return renderCarve(source, data)
         const collector = codeCollector(highlighter)
-        return collector.apply(renderCarve(source, data, [collector.extension]))
+        return collector.apply(renderCarve(source, data, collector))
       }
     },
   })

@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased on next2
+
+- Port rendering, includes, diagnostics, lint, frontmatter, and Shiki highlighting to the pinned Carve 0.2 JavaScript engine.
+- Update examples and documentation to canonical Carve 0.2 syntax and options.
+- Keep the wiki link option with an explicit unavailable error until the public inline parser hook exists.
+
+
 ## [0.1.5] - 2026-11-12
 
 Requires the Carve engine 0.1.17. Templates render from the whole file, and lint takes the new engine options.

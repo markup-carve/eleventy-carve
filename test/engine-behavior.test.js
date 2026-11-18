@@ -45,17 +45,14 @@ describe('engine behavior the renderer reaches', () => {
     expect(render('# Alpha Beta\n\n</#Alpha-Beta>\n').html).toContain('href="#Alpha-Beta">Alpha Beta')
   })
 
-  it('renames every colliding id an include brings in, not only a heading id', () => {
-    // Engine 0.1.7 emitted three elements carrying id="dup" from one included
-    // file, which is invalid HTML and makes the anchors collide.
+  it('reports every colliding authored id an include brings in', () => {
     const { html, warnings } = render('{#dup}\nBefore.\n\n{{ ../child.crv }}\n\n{{ ../child.crv }}\n', {
       files: { 'child.crv': '{#sec}\n# Shared\n\n{#dup}\nA note.\n' },
     })
 
     const ids = [...html.matchAll(/id="([^"]+)"/g)].map((match) => match[1])
-    expect(new Set(ids).size).toBe(ids.length)
-    expect(ids).toContain('dup-2')
-    expect(warnings.filter((message) => /Id "dup" was renamed/.test(message))).toHaveLength(2)
+    expect(ids.filter((id) => id === 'dup')).toHaveLength(3)
+    expect(warnings.filter((message) => /Duplicate authored id "dup"/.test(message))).toHaveLength(2)
   })
 
   it('reports a blanked destination scheme through the warning hook', () => {

@@ -30,9 +30,9 @@ describe('real Eleventy build of example/', () => {
     expect(html).toContain('<a href="https://markup-carve.github.io/carve/">the Carve project</a>')
   })
 
-  it('resolves a wiki link to the permalink of a collection page', () => {
+  it('links to the about page permalink', () => {
     const html = readFileSync(path.join(siteDir, 'index.html'), 'utf8')
-    expect(html).toContain('<a href="/about-us/" class="wikilink" data-wikilink="About">about this site</a>')
+    expect(html).toContain('<a href="/about-us/">about this site</a>')
   })
 
   it('honors YAML frontmatter title via the layout (data cascade)', () => {
