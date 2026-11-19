@@ -22,7 +22,7 @@ export default function (config) {
 }
 ```
 
-See the [guide](docs/guide.md) for options, includes, lint, extensions, highlighting, and the temporary wiki link gap. The [Carve 0.2 specification](https://github.com/markup-carve/carve/tree/next2/spec/0.2) describes the language.
+See the [guide](docs/guide.md) for options, includes, lint, extensions, highlighting, and wiki links. The [Carve 0.2 specification](https://github.com/markup-carve/carve/tree/next2/spec/0.2) describes the language.
 
 ## License
 
