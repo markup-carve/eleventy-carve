@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { tabsExtensions, tabsRenderer } from '@markup-carve/carve/v2'
+import { tabsExtensions, tabsRenderer } from '@markup-carve/carve'
 import { createCarveRenderer, extractFrontmatter } from '../src/index.js'
 
 describe('createCarveRenderer', () => {

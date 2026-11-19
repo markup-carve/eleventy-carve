@@ -19,14 +19,16 @@
  *   }
  */
 
-import { includeDependencies, lint, parse, parseWithDiagnostics, renderWithDiagnostics, stringOffsetOfByte } from '@markup-carve/carve/v2'
-import { fileSystemResolver } from '@markup-carve/carve/v2/node'
+import { includeDependencies, lint, parse, parseWithDiagnostics, renderWithDiagnostics, stringOffsetOfByte } from '@markup-carve/carve'
+import { wikilinks } from '@markup-carve/carve/extensions'
+import { fileSystemResolver } from '@markup-carve/carve/node'
 import { readFileSync, realpathSync } from 'node:fs'
 import path from 'node:path'
 import { parseFrontmatter } from './frontmatter.js'
 import yaml from 'js-yaml'
 import toml from '@iarna/toml'
 import { codeCollector, highlighterFor } from './highlight.js'
+import { wikiResolver } from './wikilinks.js'
 
 /** Translate the plugin's compatibility flags into 0.2 render options. */
 function renderOptions(options) {
@@ -107,8 +109,18 @@ function fileIds(file) {
 export function createCarveRenderer(options = {}, sourcePath) {
   const carveOptions = renderOptions(options.carveOptions ?? {})
   return function renderCarve(source, data, extraExtensions = []) {
-    if (options.wikilinks) throw new Error('eleventy-carve: wikilinks are not available yet in Carve 0.2')
     const extensions = [...(options.extensions ?? carveOptions.extensions ?? []), ...(Array.isArray(extraExtensions) ? extraExtensions : [])]
+    let renderers = carveOptions.renderers
+    if (options.wikilinks) {
+      const settings = options.wikilinks === true ? {} : options.wikilinks
+      const wiki = wikilinks({
+        urlGenerator: wikiResolver(settings, data, options.onWarning ?? (() => {})),
+        cssClass: settings.cssClass,
+        newWindow: settings.newWindow,
+      })
+      extensions.push(...wiki.extensions)
+      renderers = { ...renderers, ...wiki.renderers }
+    }
     const root = options.includeRoot ?? (sourcePath ? path.dirname(path.resolve(sourcePath)) : undefined)
     if (options.includeRoot && !path.isAbsolute(options.includeRoot)) throw new Error('eleventy-carve: includeRoot must be an absolute path')
     const includes = carveOptions.includes ?? (sourcePath && (options.includes ?? true)
@@ -118,7 +130,6 @@ export function createCarveRenderer(options = {}, sourcePath) {
         }
       : undefined)
     let parsed = parseWithDiagnostics(source, { extensions, includes, headingIds: carveOptions.headingIds })
-    let renderers = carveOptions.renderers
     if (extraExtensions?.forDocument) {
       const registrations = extraExtensions.forDocument(parsed.document)
       if (registrations.extensions.length) {

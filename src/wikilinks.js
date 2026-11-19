@@ -41,11 +41,7 @@ function lookup(items, page) {
   return []
 }
 
-/**
- * Resolve a wiki target against one Eleventy render's data. The 0.2 parser
- * hook for the bracket syntax is pending, so this helper is kept for when
- * that hook becomes public.
- */
+/** Resolve a `:wiki[Page]` target (C2-X-057) against one Eleventy render's data. */
 export function wikiResolver(options, data, onWarning) {
   const collection = options.collection ?? 'all'
   const items = data?.collections?.[collection]
@@ -62,8 +58,8 @@ export function wikiResolver(options, data, onWarning) {
     if (!Array.isArray(items)) return wikiSlug(page)
     const hits = lookup(items, page)
     if (hits.length === 1) return hits[0]
-    if (hits.length > 1) warn('wikilink-ambiguous', page, `Wiki link [[${page}]] matches several pages in collections.${collection}: ${hits.join(', ')}`)
-    else warn('wikilink-unresolved', page, `Wiki link [[${page}]] matches no page in collections.${collection}`)
+    if (hits.length > 1) warn('wikilink-ambiguous', page, `Wiki link :wiki[${page}] matches several pages in collections.${collection}: ${hits.join(', ')}`)
+    else warn('wikilink-unresolved', page, `Wiki link :wiki[${page}] matches no page in collections.${collection}`)
     return wikiSlug(page)
   }
 }

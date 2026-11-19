@@ -43,7 +43,7 @@ See [the project](https://markup-carve.github.io/carve/).
 | `includeRoot` | template directory | Absolute containment root for included files. |
 | `lint` | `false` | Send 0.2 lint diagnostics to `onWarning`; use `rules` and `platforms` to configure it. |
 | `highlight` | `false` | Highlight supported fenced code with Shiki. |
-| `wikilinks` | `false` | Reserved for the 0.2 wiki parser hook; enabling it currently throws a clear error. |
+| `wikilinks` | `false` | Link `:wiki[Page]` targets to pages of an Eleventy collection. `true`, or `{ collection, resolve, cssClass, newWindow }`. |
 | `onWarning` | console | Receive parse, lint, and render diagnostics. |
 | `onDependency` | none | Receive included files for a custom watch integration. |
 
@@ -52,7 +52,7 @@ The engine's `headingIds` choices include `off`, `keep-case`, `lower`, `ascii`, 
 Pass 0.2 extension definitions through `extensions` and trusted renderer functions through `carveOptions.renderers`. The 0.1 `CarveExtension` objects and helper factories are not accepted by the 0.2 entry. For example, the engine's standard tabs registration is:
 
 ```js
-import { tabsExtensions, tabsRenderer } from '@markup-carve/carve/v2'
+import { tabsExtensions, tabsRenderer } from '@markup-carve/carve'
 
 config.addPlugin(carvePlugin, {
   extensions: tabsExtensions,
@@ -96,9 +96,17 @@ config.addPlugin(carvePlugin, {
 
 Load the Carve grammar stylesheet in your layout when highlighting Carve fences.
 
-## Wiki links pending in the engine
+## Wiki links
 
-The 0.1 `wikilinks` option resolved `[[Page]]`, `[[Page|label]]`, and folder targets against Eleventy collections. The 0.2 parser currently reads those spellings as text. The public extension matcher cannot claim them, so enabling `wikilinks` throws `wikilinks are not available yet in Carve 0.2`. The option remains in the plugin, and [the engine parser hook request](https://github.com/markup-carve/carve-js/issues/5047) tracks the gap. Use ordinary Carve links until it lands.
+`wikilinks` registers the engine's standard `wiki` matcher, so `:wiki[Page]`, `:wiki[Page|label]`, `:wiki[Page#anchor]` and `:wiki[docs/page]` become links (C2-X-057). The 0.1 `[[Page]]` spelling is not Carve 0.2 syntax: the upgrade tool reports it (U-408) and a target written as `:wiki[Page]` replaces it.
+
+A target resolves against `collections.all`, or the collection named in `collection`: first by path stem, then by file slug, then by page title. A folder-qualified target only matches a path stem. A missing or ambiguous target sends a `wikilink-unresolved` or `wikilink-ambiguous` warning to `onWarning` and falls back to the engine's slug. A `resolve(page, data)` function runs first and wins when it returns a string. `cssClass` (default `wikilink`) and `newWindow` pass through to the engine. Every generated URL still goes through the URL policy.
+
+```js
+config.addPlugin(carvePlugin, { wikilinks: { collection: 'docs' } })
+```
+
+Without `wikilinks`, a `:wiki[Page]` target renders as its plain text.
 
 ## Frontmatter
 

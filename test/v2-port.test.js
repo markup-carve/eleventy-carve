@@ -36,11 +36,8 @@ describe('Carve 0.2 public API boundary', () => {
     expect(() => createCarveRenderer({ carveOptions: { headingIds: 'not-a-mode' } })('= Page\n')).toThrow(/headingIds/)
   })
 
-  it('retains the wikilinks option with a clear unavailable error', () => {
-    expect(() => createCarveRenderer({ wikilinks: true })('[[Page]]')).toThrow(/wikilinks are not available yet in Carve 0.2/)
-  })
-
-  it.skip('wiki link collection resolution awaits the Carve 0.2 bracket syntax parser hook in carve-js#5047', () => {
-    expect(createCarveRenderer({ wikilinks: true })('[[Page]]')).toContain('href="page"')
+  // C2-X-057: the wikilinks option registers the standard :wiki matcher.
+  it('links a :wiki target when wikilinks is on', () => {
+    expect(createCarveRenderer({ wikilinks: true })(':wiki[Page]')).toContain('href="page"')
   })
 })
