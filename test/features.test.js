@@ -42,20 +42,20 @@ describe('@region includes', () => {
 })
 
 describe('lint', () => {
-  const source = '# A\n\n# A\n\nGo to [x](#nowhere). Fixes #12.\n'
+  const source = '{#dup}\n= A\n\n{#dup}\n= B\n\nGo to [x](#nowhere). Fixes #12.\n'
 
   it('is off by default', () => {
     const { render, warnings } = collecting()
     render(source)
-    expect(warnings).toEqual([])
+    expect(warnings.filter((warning) => warning.channel === 'lint')).toEqual([])
   })
 
   it('reports findings with the rule as code and the position in the message', () => {
     const { render, warnings } = collecting({ lint: true })
     render(source)
-    const dup = warnings.find((w) => w.code === 'duplicate-heading-id')
-    expect(dup.message).toMatch(/\[duplicate-heading-id\] \(line 3, column 1\)$/)
-    expect(warnings.find((w) => w.code === 'broken-fragment-link').line).toBe(5)
+    const dup = warnings.find((w) => w.code === 'duplicate-id')
+    expect(dup.message).toMatch(/\[duplicate-id\] \(line 4, column 2\)$/)
+    expect(warnings.find((w) => w.code === 'broken-fragment-link').line).toBe(7)
     expect(warnings.some((w) => w.code === 'platform-issue-reference')).toBe(false)
   })
 
@@ -75,6 +75,7 @@ describe('lint', () => {
   })
 })
 
+// U-408, C2-X-057: the 0.1 `[[Page]]` spelling is `:wiki[Page]` in 0.2; the cases below use it.
 describe('wiki links', () => {
   const all = [
     { url: '/', fileSlug: 'index', filePathStem: '/index', data: { title: 'Home' } },
@@ -86,13 +87,16 @@ describe('wiki links', () => {
   ]
   const data = { collections: { all, posts: [all[1]] } }
 
-  it('stay literal unless enabled', () => {
-    expect(createCarveRenderer()('See [[Tigers]].', data)).toContain('[[Tigers]]')
+  // C2-X-057: without the matcher, the target keeps its core-text fallback instead of 0.1's literal brackets.
+  it('stay unlinked text unless enabled', () => {
+    const html = createCarveRenderer()('See :wiki[Tigers].', data)
+    expect(html).toContain('Tigers')
+    expect(html).not.toContain('<a ')
   })
 
   it('resolve by path stem, file slug and title to the page URL', () => {
     const { render, warnings } = collecting({ wikilinks: true })
-    const html = render('[[docs/getting-started]] [[Tigers|stripes]] [[Big Cats#size]] [[Home]] [[#top]]', data)
+    const html = render(':wiki[docs/getting-started] :wiki[Tigers|stripes] :wiki[Big Cats#size] :wiki[Home] :wiki[#top]', data)
     expect(html).toContain('<a href="/docs/getting-started/" class="wikilink" data-wikilink="docs/getting-started">docs/getting-started</a>')
     expect(html).toContain('<a href="/animals/tigers/" class="wikilink" data-wikilink="Tigers">stripes</a>')
     expect(html).toContain('href="/animals/tigers/#size"')
@@ -103,28 +107,28 @@ describe('wiki links', () => {
 
   it('warn once per render on a missing or ambiguous target and keep the carve-js slug', () => {
     const { render, warnings } = collecting({ wikilinks: true })
-    const html = render('[[Lions]] [[dup]] [[Lions]] [[draft]] [[x/tigers]]', data)
+    const html = render(':wiki[Lions] :wiki[dup] :wiki[Lions] :wiki[draft] :wiki[x/tigers]', data)
     expect(html).toContain('href="lions"')
     expect(warnings.map((w) => w.code)).toEqual(['wikilink-unresolved', 'wikilink-ambiguous', 'wikilink-unresolved', 'wikilink-unresolved'])
-    expect(warnings[1].message).toBe('Wiki link [[dup]] matches several pages in collections.all: /a/dup/, /b/dup/')
+    expect(warnings[1].message).toBe('Wiki link :wiki[dup] matches several pages in collections.all: /a/dup/, /b/dup/')
   })
 
   it('search the named collection only', () => {
     const { render, warnings } = collecting({ wikilinks: { collection: 'posts' } })
-    expect(render('[[Getting Started]] [[Tigers]]', data)).toContain('href="/docs/getting-started/"')
-    expect(warnings.map((w) => w.message)).toEqual(['Wiki link [[Tigers]] matches no page in collections.posts'])
+    expect(render(':wiki[Getting Started] :wiki[Tigers]', data)).toContain('href="/docs/getting-started/"')
+    expect(warnings.map((w) => w.message)).toEqual(['Wiki link :wiki[Tigers] matches no page in collections.posts'])
   })
 
   it('try a custom resolver first, with the render data', () => {
     const resolve = (page, d) => (page === 'Tigers' && d === data ? 'https://example.org/tigers' : undefined)
-    const html = createCarveRenderer({ wikilinks: { resolve, cssClass: 'wiki x', newWindow: true } })('[[Tigers]] [[Home]]', data)
+    const html = createCarveRenderer({ wikilinks: { resolve, cssClass: 'wiki x', newWindow: true } })(':wiki[Tigers] :wiki[Home]', data)
     expect(html).toContain('href="https://example.org/tigers" class="wiki x" data-wikilink="Tigers" target="_blank" rel="noopener"')
     expect(html).toContain('href="/"')
   })
 
   it('use the carve-js slug without collections', () => {
     const { render, warnings } = collecting({ wikilinks: true })
-    expect(render('[[Big Cats]]')).toContain('href="big-cats"')
+    expect(render(':wiki[Big Cats]')).toContain('href="big-cats"')
     expect(warnings).toEqual([])
   })
 })

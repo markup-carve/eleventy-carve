@@ -1,14 +1,18 @@
 # eleventy-carve
 
-Eleventy plugin for `.crv` templates, using @markup-carve/carve 0.1.17 or later. Carve frontmatter joins the Eleventy data cascade. Read the [Carve documentation](https://markup-carve.github.io/carve/) for the language syntax.
+Eleventy plugin for Carve 0.2 `.crv` templates. It uses the unreleased Carve JavaScript engine through a commit pin on this repository's `next2` branch. Carve frontmatter joins the Eleventy data cascade, file includes become watch targets, and fenced code can be highlighted with Shiki.
 
-## Install
+This branch is for testing the Carve 0.2 port. It has no registry release.
+
+## Install from the branch
 
 ```sh
-npm install @markup-carve/eleventy-carve
+npm install github:markup-carve/eleventy-carve#next2
 ```
 
-## Usage
+The git dependency builds the pinned Carve engine during installation. Node.js 20 or newer and Git are required.
+
+## Use
 
 ```js
 import carvePlugin from '@markup-carve/eleventy-carve'
@@ -18,10 +22,7 @@ export default function (config) {
 }
 ```
 
-## Documentation
-
-- [Carve documentation](https://markup-carve.github.io/carve/)
-- [Documentation index](docs/README.md)
+See the [guide](docs/guide.md) for options, includes, lint, extensions, highlighting, and wiki links. The [Carve 0.2 specification](https://github.com/markup-carve/carve/tree/next2/spec/0.2) describes the language.
 
 ## License
 

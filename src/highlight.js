@@ -50,7 +50,7 @@ export async function createCarveHighlighter(options = {}) {
         pre(node) {
           if (attrs?.id) node.properties.id = attrs.id
           for (const c of attrs?.classes ?? []) this.addClassToHast(node, c)
-          for (const [key, value] of Object.entries(attrs?.keyValues ?? {})) node.properties[key] = value
+          for (const [key, value] of attrs?.keyValues ?? []) node.properties[key] = value
           if (block.header !== undefined) node.properties.title = block.header
           node.properties.dataLanguage = block.lang
         },
@@ -92,15 +92,40 @@ export function codeCollector(highlighter) {
   const nonce = Math.random().toString(36).slice(2)
   const marker = (i) => `<!--eleventy-carve-shiki:${nonce}:${i}-->`
   return {
-    extension: {
-      name: 'eleventy-carve:shiki',
-      blockRenderers: {
-        code_block(node, ctx) {
-          if (!node.lang || !highlighter.accepts(node.lang)) return undefined
-          blocks.push({ lang: node.lang, code: node.content, attrs: node.attrs, header: node.header })
-          return `${ctx.indent(ctx.level)}${marker(blocks.length - 1)}`
-        },
-      },
+    forDocument(document) {
+      const languages = new Set()
+      const visit = (value) => {
+        if (!value || typeof value !== 'object') return
+        if (value.type === 'code_block' && value.syntax && highlighter.accepts(value.syntax)) languages.add(value.syntax)
+        for (const child of Object.values(value)) if (Array.isArray(child)) child.forEach(visit)
+      }
+      visit(document)
+      const extensions = []
+      const renderers = {}
+      for (const [index, language] of [...languages].entries()) {
+        const name = `eleventy.shiki${index}`
+        extensions.push({
+          name, version: '1', matcher: { form: 'fence', name: language },
+          props: { language: 'string', title: 'string' }, slots: {},
+          transform(claim) {
+            if (claim.form !== 'fence') return null
+            return {
+              type: 'block_extension', name, version: '1', children: [],
+              props: { language, title: claim.title ?? '' },
+              fallback: [structuredClone(claim.node)],
+              payload: [{ format: 'text/plain', value: claim.value }],
+            }
+          },
+        })
+        renderers[name] = {
+          version: '1',
+          render(node) {
+            blocks.push({ lang: node.props.language, code: node.payload[0].value, attrs: node.attrs, header: node.props.title || undefined })
+            return marker(blocks.length - 1)
+          },
+        }
+      }
+      return { extensions, renderers }
     },
     async apply(html) {
       const rendered = await Promise.all(blocks.map((block) => highlighter.highlight(block)))

@@ -31,15 +31,15 @@ async function build(files, options = {}) {
 }
 
 describe('a template renders from the whole file', () => {
-  it('keeps a body that opens with a dash line after the frontmatter', async () => {
-    const { pages } = await build({ 'page.crv': '---\ntitle: Rule\n---\n---\nAfter the rule.\n---\n\nBody text.\n' })
+  it('keeps a body that opens with a thematic break after the frontmatter', async () => {
+    const { pages } = await build({ 'page.crv': '---\ntitle: Rule\n---\n***\nAfter the rule.\n***\n\nBody text.\n' })
     expect(pages['page.crv'].content).toBe('<hr>\n<p>After the rule.</p>\n<hr>\n<p>Body text.</p>')
   })
 
   it('reports lint positions as lines of the file, frontmatter included', async () => {
-    const { warnings } = await build({ 'page.crv': '---\ntitle: Dup\n---\n\n# A\n\n# A\n' }, { lint: true })
-    const dup = warnings.find((warning) => warning.code === 'duplicate-heading-id')
-    expect(dup.line).toBe(7)
+    const { warnings } = await build({ 'page.crv': '---\ntitle: Dup\n---\n\n{#dup}\n= A\n\n{#dup}\n= B\n' }, { lint: true })
+    const dup = warnings.find((warning) => warning.code === 'duplicate-id')
+    expect(dup.line).toBe(8)
   })
 
   it('renders a computed string as given even when it is the end of the file', async () => {
