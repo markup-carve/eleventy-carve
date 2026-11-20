@@ -66,6 +66,8 @@ The 0.2 extension contract is provisional. Trusted renderers must apply the host
 
 `{{ chapter.crv }}` resolves relative to the template. The default containment root is the template directory. Set an absolute `includeRoot` to share files across directories. A successfully read include is added to Eleventy's watch targets. `includes: false` leaves the directive unexpanded. A custom 0.2 include resolver can be passed as `carveOptions.includes`; the engine controls its depth and byte limits.
 
+`{{ shared.crv @region:intro }}` splices only the lines between `%% #region intro` and `%% #endregion`. A missing region is reported through `onWarning` with the rule `include-region-invalid`.
+
 Parse and include diagnostics reach `onWarning`. Each warning has `code`, lowercase `severity`, `channel`, `message`, and, when available, `line`, `column`, and `file`. Render losses use `channel: 'render-loss'`. The callback does not fail the build by itself.
 
 ## Lint
@@ -86,7 +88,13 @@ The `rules` map uses `on` and `off`. The old `enabledRules` list and `captionLoo
 
 ## Syntax highlighting
 
-Install the optional Shiki and Carve grammar peer dependencies, then set `highlight: true` or pass Shiki options such as `theme`, `themes`, `langs`, `langAlias`, and `transformers`. The plugin registers a provisional 0.2 fence extension for each supported language in the template and renders its HTML with Shiki. Fences without a language or a supported grammar keep the engine's plain code block. Fence IDs, classes, attributes, and titles are carried to the highlighted element.
+Install the optional Shiki and Carve grammar peer dependencies:
+
+```bash
+npm install shiki @markup-carve/carve-grammars
+```
+
+Then set `highlight: true` or pass Shiki options such as `theme`, `themes`, `langs`, `langAlias`, and `transformers`. The plugin registers a provisional 0.2 fence extension for each supported language in the template and renders its HTML with Shiki. Fences without a language or a supported grammar keep the engine's plain code block. Fence IDs, classes, attributes, and titles are carried to the highlighted element.
 
 ```js
 config.addPlugin(carvePlugin, {
@@ -94,7 +102,7 @@ config.addPlugin(carvePlugin, {
 })
 ```
 
-Load the Carve grammar stylesheet in your layout when highlighting Carve fences.
+Load the Carve grammar stylesheet, `@markup-carve/carve-grammars/shiki/carve.css`, in your layout when highlighting Carve fences.
 
 ## Wiki links
 
@@ -111,6 +119,9 @@ Without `wikilinks`, a `:wiki[Page]` target renders as its plain text.
 ## Frontmatter
 
 A leading `---` block is YAML; `---toml` and `---json` select the other formats. The plugin reads the 0.2 `frontmatter` tree child and deserializes its `value` for Eleventy. It also registers matching gray-matter engines so Eleventy's own frontmatter pass does not reject an explicit format token.
+
+> [!NOTE]
+> The gray-matter engines are registered with `setFrontMatterParsingOptions`, a global Eleventy setting. If your project already uses custom frontmatter engines, merge them rather than letting the plugin overwrite yours.
 
 ```crv
 ---toml
