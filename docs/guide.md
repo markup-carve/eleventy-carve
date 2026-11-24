@@ -42,6 +42,7 @@ See [the project](https://markup-carve.github.io/carve/).
 | `includes` | `true` | Expand includes in file-backed templates. |
 | `includeRoot` | template directory | Absolute containment root for included files. |
 | `lint` | `false` | Send 0.2 lint diagnostics to `onWarning`; use `rules` and `platforms` to configure it. |
+| `upgradeHints` | `false` | Send each distinct row of the Carve 0.1 to 0.2 upgrade report to `onWarning`. See [Carve 0.1 sources](#carve-01-sources). |
 | `highlight` | `false` | Highlight supported fenced code with Shiki. |
 | `wikilinks` | `false` | Link `:wiki[Page]` targets to pages of an Eleventy collection. `true`, or `{ collection, resolve, cssClass, newWindow }`. |
 | `onWarning` | console | Receive parse, lint, and render diagnostics. |
@@ -85,6 +86,20 @@ config.addPlugin(carvePlugin, {
 ```
 
 The `rules` map uses `on` and `off`. The old `enabledRules` list and `captionLookingParagraph` boolean are translated for compatibility; `ignoredFiles` is filtered by this plugin. Suppression comments in the source still work. Lint uses the 0.2 diagnostic codes and lowercase severity values.
+
+## Carve 0.1 sources
+
+A site moving from Carve 0.1 can set `upgradeHints: true`. Each template then runs through the engine's 0.1 to 0.2 upgrade (`@markup-carve/carve/upgrade`), and each distinct row of its report reaches `onWarning` with `channel: 'upgrade'`, the row id as `code` (`U-065`), and the `line` of the file:
+
+```js
+config.addPlugin(carvePlugin, { upgradeHints: true })
+```
+
+```text
+eleventy-carve: Carve 0.1 source: bare underline put in braces [U-065] (line 4)
+```
+
+Rows such as `U-021` (a one-item loose list turns tight) need a person and rewrite nothing; they are reported too. The template still renders as written. Run `carve upgrade` on the sources to apply the rewrites, then turn the option off: the upgrade reads every input as 0.1 and on a 0.2 document would, for example, escape a `=` heading. With `wikilinks` on, the upgrade also reports the 0.1 `[[Page]]` spelling and its `:wiki[Page]` rewrite. Included files are not checked: the upgrade reads one document at a time, and an include may be code or CSV. `carve upgrade` over the source tree covers them.
 
 ## Syntax highlighting
 

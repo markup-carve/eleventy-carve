@@ -22,6 +22,7 @@
 import { includeDependencies, lint, parse, parseWithDiagnostics, renderWithDiagnostics, stringOffsetOfByte } from '@markup-carve/carve'
 import { wikilinks } from '@markup-carve/carve/extensions'
 import { fileSystemResolver } from '@markup-carve/carve/node'
+import { upgrade } from '@markup-carve/carve/upgrade'
 import { readFileSync, realpathSync } from 'node:fs'
 import path from 'node:path'
 import { parseFrontmatter } from './frontmatter.js'
@@ -84,6 +85,24 @@ function reportLint(source, options, extensions, includes, root, sourcePath) {
   reportDiagnostics(source, { diagnostics: findings, suppressedDiagnostics: 0 }, options, root)
 }
 
+/** Send each distinct record of the 0.1 to 0.2 upgrade to `onWarning`. */
+function reportUpgrade(source, options, sourcePath) {
+  // A 0.1 host with wikilinks on read `[[Page]]`; the upgrade only respells it when told so.
+  const result = upgrade(source, options.wikilinks ? { registeredExtensions: ['wikilinks'] } : undefined)
+  const file = sourcePath ? path.resolve(sourcePath) : undefined
+  const seen = new Set()
+  // Report rows can come with an unchanged source; `summary` rows are the self-check's own bookkeeping.
+  for (const record of result.records.filter((entry) => entry.class !== 'summary')) {
+    const message = `Carve 0.1 source: ${record.message} [${record.entry}]${record.line > 0 ? ` (line ${record.line})` : ''}`
+    if (seen.has(message)) continue
+    seen.add(message)
+    options.onWarning?.({
+      code: record.entry, rule: record.entry, severity: 'warning', channel: 'upgrade', file,
+      ...(record.line > 0 ? { line: record.line } : {}), message,
+    })
+  }
+}
+
 /**
  * The engine matches file ids exactly: the template's absolute path, and the
  * real path the file resolver reports for an include.
@@ -142,6 +161,7 @@ export function createCarveRenderer(options = {}, sourcePath) {
     const seen = new Set()
     reportDiagnostics(source, parsed, options, root, seen)
     reportLint(source, options, extensions, includes, root, sourcePath)
+    if (options.upgradeHints) reportUpgrade(source, options, sourcePath)
     const rendered = renderWithDiagnostics(parsed.document, { ...carveOptions, extensions, renderers })
     reportDiagnostics(source, rendered, options, root, seen)
     return rendered.html
