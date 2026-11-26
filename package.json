@@ -49,7 +49,7 @@
     "js-yaml": "^4.1.0"
   },
   "devDependencies": {
-    "@markup-carve/carve-grammars": "github:markup-carve/carve-grammars#31215996ebba0cad12d958275ba87fad1d99991a",
+    "@markup-carve/carve-grammars": "github:markup-carve/carve-grammars#5875ac2fa8a7b73d0cd0cfd29206e5a68a96bfb3",
     "shiki": "^4.0.0",
     "vitest": "^2.1.8"
   }
