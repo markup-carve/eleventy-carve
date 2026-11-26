@@ -45,11 +45,11 @@
   },
   "dependencies": {
     "@iarna/toml": "^2.2.5",
-    "@markup-carve/carve": "^0.1.17",
+    "@markup-carve/carve": "github:markup-carve/carve-js#2003ec4327a736ee29fbb4e6ac108db7c108e50e",
     "js-yaml": "^4.1.0"
   },
   "devDependencies": {
-    "@markup-carve/carve-grammars": "^0.1.23",
+    "@markup-carve/carve-grammars": "github:markup-carve/carve-grammars#31215996ebba0cad12d958275ba87fad1d99991a",
     "shiki": "^4.0.0",
     "vitest": "^2.1.8"
   }

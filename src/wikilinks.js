@@ -1,5 +1,3 @@
-import { wikilinks } from '@markup-carve/carve'
-
 /** The slug carve-js uses when no URL generator is given. */
 export function wikiSlug(page) {
   return page.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-_/]/g, '').replace(/-+/g, '-')
@@ -43,12 +41,8 @@ function lookup(items, page) {
   return []
 }
 
-/**
- * Build the carve-js `wikilinks` extension for one render. `data` is the
- * Eleventy data the template renders with; without its collections, links
- * keep the carve-js slug.
- */
-export function wikilinksExtension(options, data, onWarning) {
+/** Resolve a `:wiki[Page]` target (C2-X-057) against one Eleventy render's data. */
+export function wikiResolver(options, data, onWarning) {
   const collection = options.collection ?? 'all'
   const items = data?.collections?.[collection]
   const reported = new Set()
@@ -57,19 +51,15 @@ export function wikilinksExtension(options, data, onWarning) {
     reported.add(message)
     onWarning({ code, page, message })
   }
-  return wikilinks({
-    cssClass: options.cssClass,
-    newWindow: options.newWindow,
-    urlGenerator(page) {
-      if (page === '') return ''
-      const custom = options.resolve?.(page, data)
-      if (custom !== undefined) return custom
-      if (!Array.isArray(items)) return wikiSlug(page)
-      const hits = lookup(items, page)
-      if (hits.length === 1) return hits[0]
-      if (hits.length > 1) warn('wikilink-ambiguous', page, `Wiki link [[${page}]] matches several pages in collections.${collection}: ${hits.join(', ')}`)
-      else warn('wikilink-unresolved', page, `Wiki link [[${page}]] matches no page in collections.${collection}`)
-      return wikiSlug(page)
-    },
-  })
+  return (page) => {
+    if (page === '') return ''
+    const custom = options.resolve?.(page, data)
+    if (custom !== undefined) return custom
+    if (!Array.isArray(items)) return wikiSlug(page)
+    const hits = lookup(items, page)
+    if (hits.length === 1) return hits[0]
+    if (hits.length > 1) warn('wikilink-ambiguous', page, `Wiki link :wiki[${page}] matches several pages in collections.${collection}: ${hits.join(', ')}`)
+    else warn('wikilink-unresolved', page, `Wiki link :wiki[${page}] matches no page in collections.${collection}`)
+    return wikiSlug(page)
+  }
 }

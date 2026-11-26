@@ -3,7 +3,7 @@ title: Carve Home
 layout: base.njk
 ---
 
-# Welcome to Carve on Eleventy
+= Welcome to Carve on Eleventy
 
 This page is written in *Carve* and rendered by the eleventy-carve plugin.
 
@@ -13,4 +13,6 @@ This page is written in *Carve* and rendered by the eleventy-carve plugin.
 
 See [the Carve project](https://markup-carve.github.io/carve/) for details.
 
-Read [[About|about this site]].
+Read [about this site](/about-us/).
+
+Or follow the wiki link to :wiki[About|the about page].

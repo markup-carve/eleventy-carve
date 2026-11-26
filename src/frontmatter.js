@@ -16,9 +16,9 @@
  *   ---
  *
  * carve-js (parse()) already recognizes the fence and exposes the raw block as
- * `doc.frontmatter = { format, content }` without interpreting `content`. We
+ * a `frontmatter` child with `{ format, value }` without interpreting `value`. We
  * use carve-js to locate/strip the block (so the syntax stays in lockstep with
- * the engine), then deserialize `content` here into a plain data object that
+ * the engine), then deserialize `value` here into a plain data object that
  * Eleventy folds into its data cascade.
  *
  * Supported formats: yaml (default for bare `---`), toml, json.
@@ -30,15 +30,15 @@ import toml from '@iarna/toml'
 /**
  * Deserialize a raw Carve frontmatter block into a plain object.
  *
- * @param {{ format: string, content: string }} fm - raw block from carve-js
+ * @param {{ format: string, value: string }} fm - raw block from carve-js
  * @returns {Record<string, unknown>}
  */
 export function parseFrontmatter(fm) {
-  if (!fm || typeof fm.content !== 'string') {
+  if (!fm || typeof fm.value !== 'string') {
     return {}
   }
   const format = (fm.format || 'yaml').toLowerCase()
-  const content = fm.content
+  const content = fm.value
 
   let data
   switch (format) {

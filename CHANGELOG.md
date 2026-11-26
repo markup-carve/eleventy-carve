@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased on next2
+
+- Port rendering, includes, diagnostics, lint, frontmatter, and Shiki highlighting to the pinned Carve 0.2 JavaScript engine.
+- Update examples and documentation to canonical Carve 0.2 syntax and options.
+- `wikilinks` links `:wiki[Page]` targets through the engine's standard `wikilinks` extension and the collection resolver; the 0.1 `[[Page]]` spelling is not 0.2 syntax (U-408). Warning messages name the `:wiki[...]` target.
+- Pin the renamed carve-js `next2` engine (11de2ad); imports use the package root, `/extensions` and `/node` instead of `/v2`.
+
+
 ## [0.1.5] - 2026-11-12
 
 Requires the Carve engine 0.1.17. Templates render from the whole file, and lint takes the new engine options.

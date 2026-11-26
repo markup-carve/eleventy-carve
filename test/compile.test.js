@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { mermaid } from '@markup-carve/carve'
+import { tabsExtensions, tabsRenderer } from '@markup-carve/carve'
 import { createCarveRenderer, extractFrontmatter } from '../src/index.js'
 
 describe('createCarveRenderer', () => {
@@ -47,10 +47,10 @@ describe('createCarveRenderer', () => {
   it('applies extensions and heading-id options to a file-backed render', () => {
     const root = mkdtempSync(join(tmpdir(), 'eleventy-carve-options-'))
     try {
-      const render = createCarveRenderer({ extensions: [mermaid()], carveOptions: { lowercaseHeadingIds: true } }, join(root, 'page.crv'))
-      const html = render('# Hello World\n\n``` mermaid\ngraph TD; A-->B\n```\n')
+      const render = createCarveRenderer({ extensions: tabsExtensions, carveOptions: { lowercaseHeadingIds: true, renderers: { 'carve.tabs': tabsRenderer } } }, join(root, 'page.crv'))
+      const html = render('= Hello World\n\n:::: tabs\n::: tab "Install"\nRun.\n:::\n::::\n')
       expect(html).toContain('id="hello-world"')
-      expect(html).toContain('<pre class="mermaid"')
+      expect(html).toContain('class="tabs"')
     } finally {
       rmSync(root, { recursive: true, force: true })
     }
