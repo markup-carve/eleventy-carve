@@ -46,6 +46,15 @@ describe('Shiki highlighting', () => {
     expect(html).not.toContain('shiki')
   })
 
+  it('keeps a configured code renderer as the fallback for unhandled fences', async () => {
+    const collector = codeCollector(await createCarveHighlighter())
+    const html = await collector.apply(createCarveRenderer({
+      carveOptions: { codeBlockRenderer: () => '<p>custom code</p>' },
+    })('```nosuchlang\nx\n```\n\n```js\ny\n```\n', undefined, collector))
+    expect(html).toContain('<p>custom code</p>')
+    expect(html).toContain('data-language="js"')
+  })
+
   it('carries fence attributes and the title onto the highlighted pre', async () => {
     const html = await render('{#ex .wide data-x="1"}\n``` js "src/a.js"\nlet a\n```\n')
     expect(html).toContain('id="ex"')
