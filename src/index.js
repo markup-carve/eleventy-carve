@@ -162,7 +162,14 @@ export function createCarveRenderer(options = {}, sourcePath) {
     reportDiagnostics(source, parsed, options, root, seen)
     reportLint(source, options, extensions, includes, root, sourcePath)
     if (options.upgradeHints) reportUpgrade(source, options, sourcePath)
-    const rendered = renderWithDiagnostics(parsed.document, { ...carveOptions, extensions, renderers })
+    const highlightedCode = extraExtensions?.codeBlockRenderer
+    const originalCode = carveOptions.codeBlockRenderer
+    const rendered = renderWithDiagnostics(parsed.document, {
+      ...carveOptions, extensions, renderers,
+      codeBlockRenderer: highlightedCode && originalCode
+        ? (node, defaultHtml) => highlightedCode(node, defaultHtml) ?? originalCode(node, defaultHtml)
+        : highlightedCode ?? originalCode,
+    })
     reportDiagnostics(source, rendered, options, root, seen)
     return rendered.html
   }

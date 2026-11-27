@@ -1,5 +1,6 @@
 // Shiki's default theme when none is configured.
 const DEFAULT_THEME = 'github-dark'
+import { lineOptionsTransformer } from './line-options.js'
 
 async function load(specifier) {
   try {
@@ -62,6 +63,7 @@ export async function createCarveHighlighter(options = {}) {
           // Scope explanations are costly, so only Carve fences pay for them.
           ...(carveNames.has(lang) ? [grammars.carveStylingTransformer] : []),
           ...(options.transformers ?? []),
+          lineOptionsTransformer(attrs),
           preAttributes,
         ],
       })
@@ -82,50 +84,19 @@ export function highlighterFor(option) {
   return highlighter
 }
 
-/**
- * Collects fenced code during the synchronous Carve render and leaves a
- * placeholder for the async Shiki pass. Fences without a language, or in one
- * Shiki cannot load, keep the engine's plain `<pre><code>`.
- */
+/** Collect code through C2-H-206 and replace it after asynchronous highlighting. */
 export function codeCollector(highlighter) {
   const blocks = []
   const nonce = Math.random().toString(36).slice(2)
   const marker = (i) => `<!--eleventy-carve-shiki:${nonce}:${i}-->`
   return {
-    forDocument(document) {
-      const languages = new Set()
-      const visit = (value) => {
-        if (!value || typeof value !== 'object') return
-        if (value.type === 'code_block' && value.syntax && highlighter.accepts(value.syntax)) languages.add(value.syntax)
-        for (const child of Object.values(value)) if (Array.isArray(child)) child.forEach(visit)
-      }
-      visit(document)
-      const extensions = []
-      const renderers = {}
-      for (const [index, language] of [...languages].entries()) {
-        const name = `eleventy.shiki${index}`
-        extensions.push({
-          name, version: '1', matcher: { form: 'fence', name: language },
-          props: { language: 'string', title: 'string' }, slots: {},
-          transform(claim) {
-            if (claim.form !== 'fence') return null
-            return {
-              type: 'block_extension', name, version: '1', children: [],
-              props: { language, title: claim.title ?? '' },
-              fallback: [structuredClone(claim.node)],
-              payload: [{ format: 'text/plain', value: claim.value }],
-            }
-          },
-        })
-        renderers[name] = {
-          version: '1',
-          render(node) {
-            blocks.push({ lang: node.props.language, code: node.payload[0].value, attrs: node.attrs, header: node.props.title || undefined })
-            return marker(blocks.length - 1)
-          },
-        }
-      }
-      return { extensions, renderers }
+    codeBlockRenderer(node) {
+      if (!node.syntax || !highlighter.accepts(node.syntax)) return undefined
+      blocks.push({
+        lang: node.syntax, code: node.value, attrs: node.attrs,
+        header: node.title?.map((part) => part.value ?? '').join('') || undefined,
+      })
+      return marker(blocks.length - 1)
     },
     async apply(html) {
       const rendered = await Promise.all(blocks.map((block) => highlighter.highlight(block)))
