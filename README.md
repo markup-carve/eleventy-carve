@@ -2,15 +2,13 @@
 
 Eleventy plugin for Carve 0.2 `.crv` templates. It uses the unreleased Carve JavaScript engine through a commit pin on this repository's `main` branch. Carve frontmatter joins the Eleventy data cascade, file includes become watch targets, and fenced code can be highlighted with Shiki.
 
-This branch is for testing the Carve 0.2 port. It has no registry release.
-
-## Install from the branch
+## Install
 
 ```sh
-npm install github:markup-carve/eleventy-carve
+npm install @markup-carve/eleventy-carve@^0.2
 ```
 
-The git dependency builds the pinned Carve engine during installation. Node.js 20 or newer and Git are required.
+Node.js 20 or newer is required.
 
 ## Use
 
