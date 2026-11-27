@@ -1,12 +1,23 @@
 # Changelog
 
-## Unreleased on next2
+## [Unreleased]
 
-- Port rendering, includes, diagnostics, lint, frontmatter, and Shiki highlighting to the pinned Carve 0.2 JavaScript engine.
-- Update examples and documentation to canonical Carve 0.2 syntax and options.
-- `wikilinks` links `:wiki[Page]` targets through the engine's standard `wikilinks` extension and the collection resolver; the 0.1 `[[Page]]` spelling is not 0.2 syntax (U-408). Warning messages name the `:wiki[...]` target.
-- Pin the renamed carve-js `next2` engine (11de2ad); imports use the package root, `/extensions` and `/node` instead of `/v2`.
+## [0.2.0] - 2026-11-27
 
+Renders `.crv` templates with the Carve 0.2 engine. Sites on Carve 0.1 can turn on upgrade hints to find what to rewrite.
+
+### Breaking
+
+- Rendering, includes, diagnostics, lint, frontmatter and Shiki highlighting run on the Carve 0.2 JavaScript engine; templates are read as Carve 0.2 (#49).
+- Options follow Carve 0.2: `rawHtml` and `urlPolicy` are the safety controls, extensions are 0.2 definitions passed through `extensions`, and the 0.1 `CarveExtension` objects are refused (#49).
+- `wikilinks` links `:wiki[Page]` targets through the engine's standard `wikilinks` extension; the 0.1 `[[Page]]` spelling is not 0.2 syntax (U-408). Warning messages name the `:wiki[...]` target (#50).
+- The optional `@markup-carve/carve-grammars` peer for fence highlighting requires 0.2.
+
+### Improvements
+
+- `upgradeHints: true` reports each distinct row of the engine's 0.1 to 0.2 upgrade report as a warning with the row id and line (#62).
+
+**Full Changelog**: https://github.com/markup-carve/eleventy-carve/compare/0.1.5...0.2.0
 
 ## [0.1.5] - 2026-11-12
 
